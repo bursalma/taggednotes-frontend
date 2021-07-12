@@ -18,6 +18,7 @@ const Home: React.FC = () => {
 
   useEffect(() => {
     dispatch(coordinator());
+    // this is a test
   }, [dispatch]);
 
   return (
