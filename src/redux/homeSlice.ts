@@ -68,6 +68,9 @@ const homeSlice = createSlice({
   },
   reducers: {
     coordinator() {},
+    statusSet(state, { payload }) {
+      state.status = payload;
+    },
     healthSet(state, { payload }) {
       state.health = payload;
     },
@@ -84,6 +87,7 @@ export default homeSlice.reducer;
 
 export const {
   coordinator,
+  statusSet,
   healthSet,
   healthCountIncrement,
   healthCountReset,

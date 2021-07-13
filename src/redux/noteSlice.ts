@@ -1,39 +1,52 @@
-import { 
-  createSlice, 
+import {
+  createSlice,
   createEntityAdapter,
-  createSelector } from '@reduxjs/toolkit';
-import { put, takeLatest } from 'redux-saga/effects';
+  createSelector,
+} from "@reduxjs/toolkit";
+import { call, put, takeLatest } from "redux-saga/effects";
 
-import { RootState, GenRes } from './store';
-import Api from './api';
+import { RootState } from "./store";
+import Api from "./api";
+import { statusSet } from "./homeSlice";
 
 export interface NoteObj {
-  id: number,
-  rank: number, 
-  title: string,
-  content: string,
-  section: number,
-  tag_set: number[]
+  id: number;
+  rank: number;
+  title: string;
+  content: string;
+  section: number;
+  tag_set: number[];
 }
 
 const noteAdapter = createEntityAdapter<NoteObj>({
   selectId: (note) => note.id,
-  sortComparer: (a, b) =>  b.rank - a.rank
+  sortComparer: (a, b) => b.rank - a.rank,
 });
 
 const initialState = noteAdapter.getInitialState({
-  loading: 'idle',
+  loading: false,
   error: null,
-  toDelete: []
+  toDelete: [],
 } as {
-  loading: String,
-  error: any,
-  toDelete: number[]
+  loading: boolean;
+  error: any;
+  toDelete: number[];
 });
 
-function* fetchNotesSaga({ payload }: ReturnType<typeof fetchNotes>) {
-  const res: GenRes = yield Api.fetchNotes(payload);
-  yield put(notesFetched(res.data));
+function* fetchNotesSaga({ payload }: ReturnType<typeof fetchNotes>): any {
+  try {
+    let res = yield call(Api.fetchNotes, payload);
+
+    if (res.status === 200) {
+      yield put(statusSet("synced"));
+      yield put(notesFetched(res.data));
+    } else {
+      throw new Error("status not 200");
+    }
+  } catch (err) {
+    yield put(statusSet("offline"));
+    yield put(notesFetchError());
+  }
 }
 
 export function* watchFetchNotes() {
@@ -41,52 +54,57 @@ export function* watchFetchNotes() {
 }
 
 const noteSlice = createSlice({
-  name: 'note',
+  name: "note",
   initialState,
   reducers: {
     fetchNotes(state, action) {
-      state.loading = 'loading';
+      state.loading = true;
     },
     notesFetched(state, { payload }) {
       noteAdapter.upsertMany(state, payload);
-      state.loading = 'idle';
+      state.loading = false;
+    },
+    notesFetchError(state) {
+      state.loading = false;
     },
     addToDelete(state, { payload }) {
-      state.toDelete.push(payload)
+      state.toDelete.push(payload);
     },
     deleted(state) {
-      state.toDelete = []
-    }
-  }
+      state.toDelete = [];
+    },
+  },
 });
 
 export default noteSlice.reducer;
 
 export const {
-  fetchNotes, 
+  fetchNotes,
   notesFetched,
+  notesFetchError,
   addToDelete,
-  deleted } = noteSlice.actions;
+  deleted,
+} = noteSlice.actions;
 
 export const {
-  selectAll: selectAllNotes,  
+  selectAll: selectAllNotes,
   selectById: selectNoteById,
-  selectIds: selectNoteIds
+  selectIds: selectNoteIds,
 } = noteAdapter.getSelectors((state: RootState) => state.note);
 
 const selectNote = (state: RootState) => state.note;
 
 export const selectNoteLoading = createSelector(
   [selectNote],
-  note => note.loading
+  (note) => note.loading
 );
 
 export const selectNotesBySection = createSelector(
   [selectAllNotes, (state: RootState, sectionId: number) => sectionId],
-  (notes, sectionId) => notes.filter(note => note.section === sectionId)
+  (notes, sectionId) => notes.filter((note) => note.section === sectionId)
 );
 
 export const selectNotesToDelete = createSelector(
   [selectNote],
-  note => note.toDelete
+  (note) => note.toDelete
 );

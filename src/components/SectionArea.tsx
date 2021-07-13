@@ -18,13 +18,12 @@ const SectionArea: React.FC = () => {
   const allSections = useAppSelector(selectAllSections);
 
   useEffect(() => {
-    // dispatch(coordinator());
     dispatch(fetchSections());
   }, [dispatch]);
 
   return (
     <div>
-      {loading === "loading" ? (
+      {loading ? (
         <Spin size="large" />
       ) : (
         <TabsContainer type="editable-card" defaultActiveKey="default">
