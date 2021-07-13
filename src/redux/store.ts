@@ -14,7 +14,7 @@ import noteReducer, { watchFetchNotes } from './noteSlice';
 const persistConfig = {
   key: 'root',
   storage,
-  whitelist: []
+  // whitelist: []
 }
 
 const rootReducer = combineReducers({

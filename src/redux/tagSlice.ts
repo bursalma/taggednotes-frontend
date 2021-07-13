@@ -53,7 +53,9 @@ const tagSlice = createSlice({
   reducers: {
     sectionMounted({ meta }, { payload }) {
       let sectionId = payload;
-      meta[sectionId] = { isAndFilter: true, activeTagIds: [], activeNoteIds: [] }
+      if (!meta[sectionId]) {
+        meta[sectionId] = { isAndFilter: true, activeTagIds: [], activeNoteIds: [] }
+      }
     },
     isAndFilterToggled({ meta }, { payload }) {
       let sectionId = payload;
