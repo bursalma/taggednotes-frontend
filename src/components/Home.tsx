@@ -1,15 +1,15 @@
-import { useEffect } from "react";
+// import { useEffect } from "react";
 import styled from "styled-components";
-import { BackTop, Typography, Button, Spin } from "antd";
+import { BackTop, Typography, Spin } from "antd";
 import { CloseCircleOutlined, CheckCircleOutlined } from "@ant-design/icons";
 
-import { useAppDispatch, useAppSelector } from "../redux/store";
-import { selectHealth, selectStatus, statusSet } from "../redux/homeSlice";
+import { useAppSelector } from "../redux/store";
+import { selectStatus } from "../redux/homeSlice";
 import SectionArea from "./SectionArea";
 
 const Home: React.FC = () => {
-  const dispatch = useAppDispatch();
-  const health = useAppSelector(selectHealth);
+  // const dispatch = useAppDispatch();
+  // const health = useAppSelector(selectHealth);
   const status = useAppSelector(selectStatus);
 
   const statusSwitch = {
@@ -20,9 +20,9 @@ const Home: React.FC = () => {
     [status: string]: JSX.Element;
   };
 
-  useEffect(() => {
-    console.log(health);
-  }, [health]);
+  // useEffect(() => {
+  //   // console.log(health);
+  // }, []);
 
   return (
     <HomeContainer>
@@ -30,9 +30,6 @@ const Home: React.FC = () => {
       <HeaderContainer>
         <Typography.Title level={2}>taggednotes</Typography.Title>
         <DetailsContainer>
-          <Button onClick={() => dispatch(statusSet("syncing"))}>
-            it be syncing
-          </Button>
           {statusSwitch[status]}
         </DetailsContainer>
       </HeaderContainer>
