@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import styled from "styled-components";
-import { Spin, Tabs } from "antd";
+import { Spin, Tabs, Popconfirm } from "antd";
+import { CloseOutlined } from "@ant-design/icons";
 
 import { useAppDispatch, useAppSelector } from "../redux/store";
 import {
@@ -23,13 +24,11 @@ const SectionArea: React.FC = () => {
     dispatch(fetchSections());
   }, [dispatch]);
 
-  const onEdit = (targetKey: any, action: string) => {
-    if (action === 'add') {
-      console.log('add')
-    } else {
-      dispatch(addToDelete(Number(targetKey)))
+  const handleEdit = (targetKey: any, action: string) => {
+    if (action === "add") {
+      console.log("add");
     }
-  }
+  };
 
   return (
     <div>
@@ -39,7 +38,7 @@ const SectionArea: React.FC = () => {
         <TabsContainer
           type="editable-card"
           onTabClick={(key) => setActiveTab(key)}
-          onEdit={(targetKey, action) => onEdit(targetKey, action) }
+          onEdit={(targetKey, action) => handleEdit(targetKey, action)}
         >
           {allSections
             .filter(({ id }) => !toDelete.includes(id))
@@ -48,6 +47,15 @@ const SectionArea: React.FC = () => {
                 key={id}
                 tab={name}
                 closable={activeTab === String(id) ? true : false}
+                closeIcon={
+                  <Popconfirm
+                    title="Are you sure you want to delete?"
+                    okText="Delete"
+                    onConfirm={() => dispatch(addToDelete(Number(activeTab)))}
+                  >
+                    <CloseOutlined />
+                  </Popconfirm>
+                }
               >
                 <Section key={`${id}-sec`} sectionId={id} />
               </Tabs.TabPane>
