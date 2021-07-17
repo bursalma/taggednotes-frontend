@@ -7,11 +7,12 @@ import { Input, Modal } from "antd";
 import { useAppDispatch, useAppSelector } from "../redux/store";
 import {
   fetchSections,
-  addToDelete,
+  postSection,
+  deleteSection,
+  // addToDelete,
   selectSectionLoading,
   selectAllSections,
   selectSectionsToDelete,
-  postSection,
 } from "../redux/sectionSlice";
 import Section from "./Section";
 import SectionName from "./SectionName";
@@ -61,7 +62,7 @@ const SectionArea: React.FC = () => {
                   <Popconfirm
                     title="Are you sure you want to delete?"
                     okText="Delete"
-                    onConfirm={() => dispatch(addToDelete(Number(activeTab)))}
+                    onConfirm={() => dispatch(deleteSection(Number(activeTab)))}
                   >
                     <CloseOutlined />
                   </Popconfirm>

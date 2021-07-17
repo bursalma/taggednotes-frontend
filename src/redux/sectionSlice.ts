@@ -3,7 +3,7 @@ import {
   createEntityAdapter,
   createSelector,
 } from "@reduxjs/toolkit";
-import { call, put, takeLatest } from "redux-saga/effects";
+import { all, call, put, takeEvery, takeLatest } from "redux-saga/effects";
 
 import { RootState } from "./store";
 import Api from "./api";
@@ -50,7 +50,7 @@ function* fetchSectionsSaga(): any {
   }
 }
 
-export function* watchFetchSections() {
+function* watchFetchSections() {
   yield takeLatest(fetchSections.type, fetchSectionsSaga);
 }
 
@@ -58,13 +58,12 @@ function* postSectionSaga({ payload }: ReturnType<typeof postSection>): any {
   try {
     let name: string = payload!
     let res = yield call(Api.postSection, name);
-    console.log(res)
 
     if (res.status === 201) {
       yield put(statusSet("synced"));
       yield put(sectionPosted(res.data));
     } else {
-      throw new Error("status not 200");
+      throw new Error("status not 201");
     }
   } catch (err) {
     yield put(statusSet("offline"));
@@ -72,8 +71,37 @@ function* postSectionSaga({ payload }: ReturnType<typeof postSection>): any {
   }
 }
 
-export function* watchPostSection() {
-  yield takeLatest(postSection.type, postSectionSaga);
+function* watchPostSection() {
+  yield takeEvery(postSection.type, postSectionSaga);
+}
+
+function* deleteSectionSaga({ payload }: ReturnType<typeof deleteSection>): any {
+  try {
+    let id: number = payload!
+    let res = yield call(Api.deleteSection, id);
+
+    if (res.status === 204) {
+      yield put(statusSet("synced"));
+      yield put(sectionDeleted(id));
+    } else {
+      throw new Error("status not 204");
+    }
+  } catch (err) {
+    yield put(statusSet("offline"));
+    yield put(sectionDeleteError());
+  }
+}
+
+function* watchDeleteSection() {
+  yield takeEvery(deleteSection.type, deleteSectionSaga);
+}
+
+export function* sectionRootSaga() {
+  yield all([
+    watchFetchSections(),
+    watchPostSection(),
+    watchDeleteSection()
+  ])
 }
 
 const sectionSlice = createSlice({
@@ -100,6 +128,17 @@ const sectionSlice = createSlice({
     sectionPostError(state) {
       state.loading = false;
     },
+    deleteSection(state, action) {
+      state.loading = true;
+    },
+    sectionDeleted(state, { payload }) {
+      console.log(payload)
+      sectionAdapter.removeOne(state, payload)
+      state.loading = false;
+    },
+    sectionDeleteError(state) {
+      state.loading = false;
+    },
     addToDelete(state, { payload }) {
       state.toDelete.push(payload);
     },
@@ -118,6 +157,9 @@ export const {
   postSection,
   sectionPosted,
   sectionPostError,
+  deleteSection,
+  sectionDeleted,
+  sectionDeleteError,
   addToDelete,
   deleted,
 } = sectionSlice.actions;

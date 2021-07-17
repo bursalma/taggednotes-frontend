@@ -7,7 +7,7 @@ import createSagaMiddleware from "redux-saga";
 import { all } from "redux-saga/effects";
 
 import homeReducer, { watchCoordinator } from "./homeSlice";
-import sectionReducer, { watchFetchSections, watchPostSection } from "./sectionSlice";
+import sectionReducer, { sectionRootSaga } from "./sectionSlice";
 import tagReducer, { watchFetchTags } from "./tagSlice";
 import noteReducer, { watchFetchNotes } from "./noteSlice";
 
@@ -44,10 +44,9 @@ export const store: any = configureStore({
 function* rootSaga() {
   yield all([
     watchCoordinator(),
-    watchFetchSections(),
     watchFetchTags(),
     watchFetchNotes(),
-    watchPostSection()
+    sectionRootSaga()
   ]);
 }
 
