@@ -12,6 +12,7 @@ import {
   selectSectionsToDelete,
 } from "../redux/sectionSlice";
 import Section from "./Section";
+import SectionName from "./SectionName";
 
 const SectionArea: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>("");
@@ -45,7 +46,13 @@ const SectionArea: React.FC = () => {
             .map(({ id, name }) => (
               <Tabs.TabPane
                 key={id}
-                tab={name}
+                tab={
+                  <SectionName
+                    key={`${id}-name`}
+                    sectionId={id}
+                    sectionName={name}
+                  />
+                }
                 closable={activeTab === String(id) ? true : false}
                 closeIcon={
                   <Popconfirm
