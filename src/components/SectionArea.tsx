@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import styled from "styled-components";
 import { Spin, Tabs, Popconfirm } from "antd";
 import { CloseOutlined } from "@ant-design/icons";
@@ -18,8 +18,8 @@ import SectionName from "./SectionName";
 
 const SectionArea: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>("");
+  const [postVal, setPostVal] = useState<string>("");
   const [open, setOpen] = useState<boolean>(false);
-  const postVal = useRef(null);
   const dispatch = useAppDispatch();
   const loading = useAppSelector(selectSectionLoading);
   const toDelete = useAppSelector(selectSectionsToDelete);
@@ -29,14 +29,8 @@ const SectionArea: React.FC = () => {
     dispatch(fetchSections());
   }, [dispatch]);
 
-  const handleEdit = (targetKey: any, action: string) => {
-    if (action === "add") {
-      setOpen(true);
-    }
-  };
-
   const handleCreate = () => {
-    dispatch(postSection(postVal.current!["state"]["value"]))
+    if (postVal) dispatch(postSection(postVal));
     setOpen(false);
   };
 
@@ -48,7 +42,7 @@ const SectionArea: React.FC = () => {
         <TabsContainer
           type="editable-card"
           onTabClick={(key) => setActiveTab(key)}
-          onEdit={(targetKey, action) => handleEdit(targetKey, action)}
+          onEdit={(_, action) => (action === "add" ? setOpen(true) : null)}
         >
           {allSections
             .filter(({ id }) => !toDelete.includes(id))
@@ -90,7 +84,7 @@ const SectionArea: React.FC = () => {
           maxLength={30}
           onPressEnter={handleCreate}
           allowClear
-          ref={postVal}
+          onChange={(e) => setPostVal(e.target.value)}
         />
       </Modal>
     </div>

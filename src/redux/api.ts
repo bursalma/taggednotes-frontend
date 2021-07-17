@@ -10,11 +10,15 @@ const http = axios.create({
 });
 
 const Api = {
-  fetchHealth: () => http.get("health"),
-  fetchSections: () => http.get("section"),
-  fetchTags: (sectionId: number) => http.get(`tag/${sectionId}`),
-  fetchNotes: (sectionId: number) => http.get(`note/${sectionId}`),
-  postSection: (name: string) => http.post("section/", {name: name, rank: 1})
+  fetchHealth: () => http.get("health/"),
+  fetchSections: () => http.get("section/"),
+  fetchTags: (sectionId: number) => http.get(`tag/${sectionId}/`),
+  fetchNotes: (sectionId: number) => http.get(`note/${sectionId}/`),
+  postSection: (sectionName: string) =>
+    http.post("section/", { name: sectionName, rank: 1 }),
+  deleteSection: (sectionId: number) => http.delete(`section/${sectionId}/`),
+  putSection: (sectionId: number, sectionName: string) =>
+    http.put(`section/${sectionId}/`, { name: sectionName }),
 };
 
 export default Api;
