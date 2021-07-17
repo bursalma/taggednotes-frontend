@@ -7,7 +7,7 @@ import createSagaMiddleware from "redux-saga";
 import { all } from "redux-saga/effects";
 
 import homeReducer, { watchCoordinator } from "./homeSlice";
-import sectionReducer, { watchFetchSections } from "./sectionSlice";
+import sectionReducer, { watchFetchSections, watchPostSection } from "./sectionSlice";
 import tagReducer, { watchFetchTags } from "./tagSlice";
 import noteReducer, { watchFetchNotes } from "./noteSlice";
 
@@ -47,6 +47,7 @@ function* rootSaga() {
     watchFetchSections(),
     watchFetchTags(),
     watchFetchNotes(),
+    watchPostSection()
   ]);
 }
 

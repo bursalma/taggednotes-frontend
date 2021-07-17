@@ -14,6 +14,7 @@ const Api = {
   fetchSections: () => http.get("section"),
   fetchTags: (sectionId: number) => http.get(`tag/${sectionId}`),
   fetchNotes: (sectionId: number) => http.get(`note/${sectionId}`),
+  postSection: (name: string) => http.post("section/", {name: name, rank: 1})
 };
 
 export default Api;

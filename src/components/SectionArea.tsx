@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import { Spin, Tabs, Popconfirm } from "antd";
 import { CloseOutlined } from "@ant-design/icons";
+import { Input, Modal } from "antd";
 
 import { useAppDispatch, useAppSelector } from "../redux/store";
 import {
@@ -10,12 +11,15 @@ import {
   selectSectionLoading,
   selectAllSections,
   selectSectionsToDelete,
+  postSection,
 } from "../redux/sectionSlice";
 import Section from "./Section";
 import SectionName from "./SectionName";
 
 const SectionArea: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>("");
+  const [open, setOpen] = useState<boolean>(false);
+  const postVal = useRef(null);
   const dispatch = useAppDispatch();
   const loading = useAppSelector(selectSectionLoading);
   const toDelete = useAppSelector(selectSectionsToDelete);
@@ -27,8 +31,13 @@ const SectionArea: React.FC = () => {
 
   const handleEdit = (targetKey: any, action: string) => {
     if (action === "add") {
-      console.log("add");
+      setOpen(true);
     }
+  };
+
+  const handleCreate = () => {
+    dispatch(postSection(postVal.current!["state"]["value"]))
+    setOpen(false);
   };
 
   return (
@@ -69,6 +78,21 @@ const SectionArea: React.FC = () => {
             ))}
         </TabsContainer>
       )}
+      <Modal
+        visible={open}
+        width={300}
+        closable={false}
+        okText="Create"
+        onOk={handleCreate}
+        onCancel={() => setOpen(false)}
+      >
+        <Input
+          maxLength={30}
+          onPressEnter={handleCreate}
+          allowClear
+          ref={postVal}
+        />
+      </Modal>
     </div>
   );
 };

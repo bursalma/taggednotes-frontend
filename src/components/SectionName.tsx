@@ -6,7 +6,7 @@ const SectionName: React.FC<{ sectionId: number; sectionName: string }> = ({
 }) => {
   const [open, setOpen] = useState<boolean>(false);
 
-  const handleChange = () => {
+  const handleOk = () => {
     
   }
 
@@ -17,7 +17,7 @@ const SectionName: React.FC<{ sectionId: number; sectionName: string }> = ({
         visible={open}
         closable={false}
         okText='Change'
-        onOk={handleChange}
+        onOk={handleOk}
         onCancel={() => setOpen(false)}
       >
         <Input defaultValue={sectionName} />
