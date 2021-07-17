@@ -56,7 +56,7 @@ function* watchFetchSections() {
 
 function* postSectionSaga({ payload }: ReturnType<typeof postSection>): any {
   try {
-    let name: string = payload!
+    let name: string = payload;
     let res = yield call(Api.postSection, name);
 
     if (res.status === 201) {
@@ -75,9 +75,11 @@ function* watchPostSection() {
   yield takeEvery(postSection.type, postSectionSaga);
 }
 
-function* deleteSectionSaga({ payload }: ReturnType<typeof deleteSection>): any {
+function* deleteSectionSaga({
+  payload,
+}: ReturnType<typeof deleteSection>): any {
   try {
-    let id: number = payload!
+    let id: number = payload;
     let res = yield call(Api.deleteSection, id);
 
     if (res.status === 204) {
@@ -96,12 +98,34 @@ function* watchDeleteSection() {
   yield takeEvery(deleteSection.type, deleteSectionSaga);
 }
 
+function* putSectionSaga({ payload }: ReturnType<typeof putSection>): any {
+  try {
+    let { sectionId, putVal } = payload;
+    let res = yield call(Api.putSection, sectionId, putVal);
+
+    if (res.status === 200) {
+      yield put(statusSet("synced"));
+      yield put(sectionPut(res.data));
+    } else {
+      throw new Error("status not 200");
+    }
+  } catch (err) {
+    yield put(statusSet("offline"));
+    yield put(sectionPutError());
+  }
+}
+
+function* watchPutSection() {
+  yield takeEvery(putSection.type, putSectionSaga);
+}
+
 export function* sectionRootSaga() {
   yield all([
     watchFetchSections(),
     watchPostSection(),
-    watchDeleteSection()
-  ])
+    watchDeleteSection(),
+    watchPutSection(),
+  ]);
 }
 
 const sectionSlice = createSlice({
@@ -122,7 +146,7 @@ const sectionSlice = createSlice({
       state.loading = true;
     },
     sectionPosted(state, { payload }) {
-      sectionAdapter.addOne(state, payload)
+      sectionAdapter.addOne(state, payload);
       state.loading = false;
     },
     sectionPostError(state) {
@@ -132,11 +156,20 @@ const sectionSlice = createSlice({
       state.loading = true;
     },
     sectionDeleted(state, { payload }) {
-      console.log(payload)
-      sectionAdapter.removeOne(state, payload)
+      sectionAdapter.removeOne(state, payload);
       state.loading = false;
     },
     sectionDeleteError(state) {
+      state.loading = false;
+    },
+    putSection(state, action) {
+      state.loading = true;
+    },
+    sectionPut(state, { payload }) {
+      sectionAdapter.upsertOne(state, payload);
+      state.loading = false;
+    },
+    sectionPutError(state) {
       state.loading = false;
     },
     addToDelete(state, { payload }) {
@@ -160,6 +193,9 @@ export const {
   deleteSection,
   sectionDeleted,
   sectionDeleteError,
+  putSection,
+  sectionPut,
+  sectionPutError,
   addToDelete,
   deleted,
 } = sectionSlice.actions;
