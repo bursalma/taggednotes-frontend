@@ -9,7 +9,6 @@ import {
   fetchSections,
   postSection,
   deleteSection,
-  // addToDelete,
   selectSectionLoading,
   selectAllSections,
   selectSectionsToDelete,
