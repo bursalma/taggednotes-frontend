@@ -56,11 +56,13 @@ export function* watchCoordinator() {
 const homeSlice = createSlice({
   name: "home",
   initialState: {
+    isAuthenticated: false,
     status: "offline",
     health: false,
     healthCount: 0,
     error: null,
   } as {
+    isAuthenticated: boolean,
     status: string;
     health: boolean;
     healthCount: number;
@@ -68,6 +70,9 @@ const homeSlice = createSlice({
   },
   reducers: {
     coordinator() {},
+    isAuthenticatedSet(state, { payload }) {
+      state.isAuthenticated = payload;
+    },
     statusSet(state, { payload }) {
       state.status = payload;
     },
@@ -87,6 +92,7 @@ export default homeSlice.reducer;
 
 export const {
   coordinator,
+  isAuthenticatedSet,
   statusSet,
   healthSet,
   healthCountIncrement,
@@ -98,6 +104,7 @@ const selectHome = (state: RootState) => state.home;
 const baseSelector = (field: string) =>
   createSelector([selectHome], (home) => home[field]);
 
+export const selectIsAuthenticated = baseSelector("isAuthenticated");
 export const selectStatus = baseSelector("status");
 export const selectHealth = baseSelector("health");
 export const selectHealthCount = baseSelector("healthCount");
