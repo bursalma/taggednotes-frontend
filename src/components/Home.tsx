@@ -1,6 +1,6 @@
-import { useState } from "react";
+// import { useState } from "react";
 import styled from "styled-components";
-import { Avatar, BackTop, Button, Typography, Modal } from "antd";
+import { Avatar, BackTop, Button, Typography, Space, Tooltip } from "antd";
 import {
   CloseOutlined,
   CheckOutlined,
@@ -11,23 +11,35 @@ import { useAppSelector, useAppDispatch } from "../redux/store";
 import {
   selectIsAuthenticated,
   selectStatus,
-  isAuthenticatedSet,
+  signedOut,
 } from "../redux/homeSlice";
 import SectionArea from "./SectionArea";
 import SignInUp from "./SignInUp";
 
 const Home: React.FC = () => {
   const dispatch = useAppDispatch();
-  const [open, setOpen] = useState<boolean>(false);
+  // const [open, setOpen] = useState<boolean>(false);
   const status = useAppSelector(selectStatus);
   let isAuthenticated = useAppSelector(selectIsAuthenticated);
 
   // isAuthenticated = true
 
   const statusSwitch = {
-    syncing: <Avatar icon={<LoadingOutlined />} />,
-    offline: <Avatar icon={<CloseOutlined />} />,
-    synced: <Avatar icon={<CheckOutlined />} />,
+    syncing: (
+      <Tooltip title="syncing" placement="left" mouseEnterDelay={1}>
+        <Avatar icon={<LoadingOutlined />} />
+      </Tooltip>
+    ),
+    offline: (
+      <Tooltip title="offline" placement="left" mouseEnterDelay={1}>
+        <Avatar icon={<CloseOutlined />} />
+      </Tooltip>
+    ),
+    synced: (
+      <Tooltip title="synced" placement="left" mouseEnterDelay={1}>
+        <Avatar icon={<CheckOutlined />} />
+      </Tooltip>
+    ),
   } as {
     [status: string]: JSX.Element;
   };
@@ -37,23 +49,19 @@ const Home: React.FC = () => {
       <BackTop />
       <HeaderContainer>
         <Typography.Title level={2}>taggednotes</Typography.Title>
-        <DetailsContainer>
-          {statusSwitch[status]}
-          {isAuthenticated ? (
-            <Button
-              onClick={
-                isAuthenticated
-                  ? () => dispatch(isAuthenticatedSet(false))
-                  : () => setOpen(true)
-              }
-            >
-              {isAuthenticated ? "Sign Out" : "Sign In/Up"}
-            </Button>
-          ) : null}
-        </DetailsContainer>
+        <SettingsContainer>
+          <Space>
+            {statusSwitch[status]}
+            {isAuthenticated ? (
+              <Button type="primary" onClick={() => dispatch(signedOut())}>
+                Sign Out
+              </Button>
+            ) : null}
+          </Space>
+        </SettingsContainer>
       </HeaderContainer>
       {isAuthenticated ? <SectionArea /> : <SignInUp />}
-      <Modal
+      {/* <Modal
         visible={open}
         // width={1000}
         closable={false}
@@ -61,7 +69,7 @@ const Home: React.FC = () => {
         onCancel={() => setOpen(false)}
       >
         <SignInUp />
-      </Modal>
+      </Modal> */}
     </HomeContainer>
   );
 };
@@ -73,11 +81,12 @@ const HomeContainer = styled.div`
 const HeaderContainer = styled.div`
   display: flex;
   justify-content: space-between;
+  flex-wrap: wrap;
 `;
 
-const DetailsContainer = styled.div`
+const SettingsContainer = styled.div`
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
 `;
 
 export default Home;

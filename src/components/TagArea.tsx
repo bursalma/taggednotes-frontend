@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import styled from "styled-components";
-import { Spin, Button, Switch, Tooltip } from "antd";
+import { Spin, Button, Switch, Tooltip, Space } from "antd";
 import { CloseOutlined } from "@ant-design/icons";
 
 import { useAppDispatch, useAppSelector } from "../redux/store";
@@ -36,26 +36,30 @@ const TagArea: React.FC<{ sectionId: number }> = ({ sectionId }) => {
         <Spin size="large" />
       ) : (
         <TagAreaContainer>
-          <Tooltip
-            title="Filter by intersection or union"
-            placement="topLeft"
-            mouseEnterDelay={1}
-          >
-            <Switch
-              checkedChildren="⋂"
-              unCheckedChildren="⋃"
+          <SettingsContainer>
+          <Space>
+            <Tooltip
+              title="Filter by intersection or union"
+              placement="topLeft"
+              mouseEnterDelay={1}
+            >
+              <Switch
+                checkedChildren="⋂"
+                unCheckedChildren="⋃"
+                size="small"
+                defaultChecked
+                onChange={() => dispatch(isAndFilterToggled(sectionId))}
+              />
+            </Tooltip>
+            <Button
+              shape="circle"
               size="small"
-              defaultChecked
-              onChange={() => dispatch(isAndFilterToggled(sectionId))}
+              type="primary"
+              icon={<CloseOutlined />}
+              onClick={() => dispatch(filterReset(sectionId))}
             />
-          </Tooltip>
-          <Button
-            shape="circle"
-            size="small"
-            type="primary"
-            icon={<CloseOutlined />}
-            onClick={() => dispatch(filterReset(sectionId))}
-          />
+          </Space>
+          </SettingsContainer>
           <TagsViewContainer>
             {allTags
               .filter(({ id }) => !toDelete.includes(id))
@@ -87,6 +91,12 @@ const TagsViewContainer = styled.div`
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
+`;
+
+const SettingsContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 `;
 
 export default TagArea;
