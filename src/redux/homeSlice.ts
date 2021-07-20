@@ -3,6 +3,25 @@ import { all, call, put, takeLatest } from "redux-saga/effects";
 import axios from "axios";
 
 import { RootState } from "./store";
+import Api from "./api";
+
+function* fetchHealthSaga(): any {
+  try {
+    let res = yield call(Api.fetchHealth);
+
+    if (res.status === 200) {
+      yield put(healthFetched());
+    } else {
+      throw new Error("status not 200");
+    }
+  } catch (err) {
+    yield put(healthFetchError());
+  }
+}
+
+function* watchFetchHealth() {
+  yield takeLatest(fetchHealth.type, fetchHealthSaga);
+}
 
 function* signUpSaga({ payload }: ReturnType<typeof signUp>): any {
   try {
@@ -44,7 +63,7 @@ function* watchSignIn() {
 }
 
 export function* homeRootSaga() {
-  yield all([watchSignUp(), watchSignIn()]);
+  yield all([watchFetchHealth(), watchSignUp(), watchSignIn()]);
 }
 
 const homeSlice = createSlice({
@@ -71,6 +90,15 @@ const homeSlice = createSlice({
     // error: any;
   },
   reducers: {
+    fetchHealth(state) {
+      state.status = "syncing";
+    },
+    healthFetched(state) {
+      state.status = "synced";
+    },
+    healthFetchError(state) {
+      state.status = "offline";
+    },
     signUp(state, action) {
       state.status = "syncing";
     },
@@ -122,6 +150,9 @@ const homeSlice = createSlice({
 export default homeSlice.reducer;
 
 export const {
+  fetchHealth,
+  healthFetched,
+  healthFetchError,
   signUp,
   signedUp,
   signUpError,
@@ -142,24 +173,14 @@ const selectHome = (state: RootState) => state.home;
 const baseSelector = (field: string) =>
   createSelector([selectHome], (home) => home[field]);
 
+export const selectUsername = baseSelector("username");
+export const selectEmail = baseSelector("email");
+export const selectAccessToken = baseSelector("accessToken");
+export const selectRefreshToken = baseSelector("refreshToken");
 export const selectIsAuthenticated = baseSelector("isAuthenticated");
 export const selectStatus = baseSelector("status");
-export const selectHealth = baseSelector("health");
-export const selectHealthCount = baseSelector("healthCount");
-
-// function* fetchHealth(): any {
-//   try {
-//     let res = yield call(Api.fetchHealth);
-
-//     if (res.status === 200) {
-//       yield put(healthSet(true));
-//     } else {
-//       throw new Error("status not 200");
-//     }
-//   } catch (err) {
-//     yield put(healthSet(false));
-//   }
-// }
+// export const selectHealth = baseSelector("health");
+// export const selectHealthCount = baseSelector("healthCount");
 
 // function* coordinatorSaga() {
 //   let health: boolean = yield select(selectHealth);
