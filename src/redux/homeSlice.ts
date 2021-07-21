@@ -1,9 +1,8 @@
 import { createSlice, createSelector } from "@reduxjs/toolkit";
 import { all, call, put, takeLatest } from "redux-saga/effects";
-import axios from "axios";
 
 import { RootState } from "./store";
-import Api from "./api";
+import Api, { http } from "./api";
 
 function* fetchHealthSaga(): any {
   try {
@@ -25,11 +24,10 @@ function* watchFetchHealth() {
 
 function* signUpSaga({ payload }: ReturnType<typeof signUp>): any {
   try {
-    let url = `${process.env.REACT_APP_SERVER_URL}/auth/register/`;
-    let res = yield call(axios.post, url, payload);
+    let res = yield call(Api.register, payload);
 
     if (res.status === 201) {
-      yield put(signedUp(res.data));
+      yield put(signedIn(res.data));
     } else {
       throw new Error("status not 201");
     }
@@ -44,9 +42,8 @@ function* watchSignUp() {
 
 function* signInSaga({ payload }: ReturnType<typeof signIn>): any {
   try {
-    let url = `${process.env.REACT_APP_SERVER_URL}/auth/login/`;
-    delete payload["remember"];
-    let res = yield call(axios.post, url, payload);
+    // delete payload["remember"];
+    let res = yield call(Api.login, payload);
 
     if (res.status === 200) {
       yield put(signedIn(res.data));
@@ -62,8 +59,29 @@ function* watchSignIn() {
   yield takeLatest(signIn.type, signInSaga);
 }
 
+function* signOutSaga(): any {
+  try {
+    let res = yield call(Api.logout);
+    console.log(res);
+
+    if (res.status === 200) {
+      yield put(statusSet("synced"));
+      yield put(signedOut());
+    } else {
+      throw new Error("status not 200");
+    }
+  } catch (err) {
+    yield put(statusSet("offline"));
+    yield put(signedOut());
+  }
+}
+
+function* watchSignOut() {
+  yield takeLatest(signOut.type, signOutSaga);
+}
+
 export function* homeRootSaga() {
-  yield all([watchFetchHealth(), watchSignUp(), watchSignIn()]);
+  yield all([watchFetchHealth(), watchSignUp(), watchSignIn(), watchSignOut()]);
 }
 
 const homeSlice = createSlice({
@@ -75,9 +93,6 @@ const homeSlice = createSlice({
     refreshToken: "",
     isAuthenticated: false,
     status: "synced",
-    // health: false,
-    // healthCount: 0,
-    // error: null,
   } as {
     username: string;
     email: string;
@@ -85,9 +100,6 @@ const homeSlice = createSlice({
     refreshToken: string;
     isAuthenticated: boolean;
     status: string;
-    // health: boolean;
-    // healthCount: number;
-    // error: any;
   },
   reducers: {
     fetchHealth(state) {
@@ -99,21 +111,21 @@ const homeSlice = createSlice({
     healthFetchError(state) {
       state.status = "offline";
     },
-    signUp(state, action) {
+    signUp(state, _) {
       state.status = "syncing";
     },
-    signedUp(state, { payload }) {
-      state.status = "synced";
-      state.username = payload.user.username;
-      state.email = payload.user.email;
-      state.accessToken = payload.access_token;
-      state.refreshToken = payload.refresh_token;
-      state.isAuthenticated = true;
-    },
+    // signedUp(state, { payload }) {
+    //   state.status = "synced";
+    //   state.username = payload.user.username;
+    //   state.email = payload.user.email;
+    //   state.accessToken = payload.access_token;
+    //   state.refreshToken = payload.refresh_token;
+    //   state.isAuthenticated = true;
+    // },
     signUpError(state) {
       state.status = "offline";
     },
-    signIn(state, action) {
+    signIn(state, _) {
       state.status = "syncing";
     },
     signedIn(state, { payload }) {
@@ -127,23 +139,19 @@ const homeSlice = createSlice({
     signInError(state) {
       state.status = "offline";
     },
-    signedOut() {},
+    signOut(state) {
+      state.status = "syncing";
+    },
+    signedOut() {
+      delete http.defaults.headers["Authorization"];
+    },
+    // signOutError() {},
     isAuthenticatedSet(state, { payload }) {
       state.isAuthenticated = payload;
     },
     statusSet(state, { payload }) {
       state.status = payload;
     },
-    // coordinator() {},
-    // healthSet(state, { payload }) {
-    //   state.health = payload;
-    // },
-    // healthCountIncrement(state) {
-    //   state.healthCount++;
-    // },
-    // healthCountReset(state) {
-    //   state.healthCount = 0;
-    // },
   },
 });
 
@@ -154,18 +162,16 @@ export const {
   healthFetched,
   healthFetchError,
   signUp,
-  signedUp,
+  // signedUp,
   signUpError,
   signIn,
   signedIn,
   signInError,
+  signOut,
   signedOut,
+  // signOutError,
   isAuthenticatedSet,
   statusSet,
-  // coordinator,
-  // healthSet,
-  // healthCountIncrement,
-  // healthCountReset,
 } = homeSlice.actions;
 
 const selectHome = (state: RootState) => state.home;
@@ -179,8 +185,6 @@ export const selectAccessToken = baseSelector("accessToken");
 export const selectRefreshToken = baseSelector("refreshToken");
 export const selectIsAuthenticated = baseSelector("isAuthenticated");
 export const selectStatus = baseSelector("status");
-// export const selectHealth = baseSelector("health");
-// export const selectHealthCount = baseSelector("healthCount");
 
 // function* coordinatorSaga() {
 //   let health: boolean = yield select(selectHealth);

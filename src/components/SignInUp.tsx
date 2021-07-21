@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import { Form, Input, Button, Checkbox, Divider, Space } from "antd";
+import { Form, Input, Button, Divider, Space } from "antd";
 import { UserOutlined, LockOutlined, MailOutlined } from "@ant-design/icons";
 
 import { useAppDispatch } from "../redux/store";
@@ -32,9 +32,9 @@ const SignInUp: React.FC = () => {
               placeholder="Password"
             />
           </Form.Item>
-          <Form.Item name="remember" valuePropName="checked" noStyle>
+          {/* <Form.Item name="remember" valuePropName="checked" noStyle>
             <Checkbox>Remember me</Checkbox>
-          </Form.Item>
+          </Form.Item> */}
           <Form.Item>
             <Button type="primary" htmlType="submit">
               Sign In

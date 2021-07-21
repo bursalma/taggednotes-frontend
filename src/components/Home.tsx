@@ -22,7 +22,7 @@ import {
   selectIsAuthenticated,
   selectStatus,
   selectUsername,
-  signedOut,
+  signOut,
 } from "../redux/homeSlice";
 import SectionArea from "./SectionArea";
 import SignInUp from "./SignInUp";
@@ -36,7 +36,7 @@ const Home: React.FC = () => {
 
   // isAuthenticated = true
 
-  useEffect(() => {
+  useEffect((): any => {
     dispatch(fetchHealth());
   }, [dispatch]);
 
@@ -56,8 +56,12 @@ const Home: React.FC = () => {
 
   const menu = (
     <Menu>
-      <Menu.Item onClick={() => setOpen(true)}>Account</Menu.Item>
-      <Menu.Item onClick={() => dispatch(signedOut())}>Sign Out</Menu.Item>
+      <Menu.Item key={1} onClick={() => setOpen(true)}>
+        Account
+      </Menu.Item>
+      <Menu.Item key={2} onClick={() => dispatch(signOut())}>
+        Sign Out
+      </Menu.Item>
     </Menu>
   );
 
