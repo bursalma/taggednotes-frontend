@@ -15,23 +15,19 @@ import {
 } from "../redux/sectionSlice";
 import Section from "./Section";
 import SectionName from "./SectionName";
-import { http } from "../redux/api";
-import { selectAccessToken } from "../redux/homeSlice";
 
 const SectionArea: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>("");
   const [postVal, setPostVal] = useState<string>("");
   const [open, setOpen] = useState<boolean>(false);
   const dispatch = useAppDispatch();
-  const accessToken = useAppSelector(selectAccessToken);
   const loading = useAppSelector(selectSectionLoading);
   const toDelete = useAppSelector(selectSectionsToDelete);
   const allSections = useAppSelector(selectAllSections);
 
   useEffect(() => {
-    http.defaults.headers["Authorization"] = `Token ${accessToken}`;
     dispatch(fetchSections());
-  }, [dispatch, accessToken]);
+  }, [dispatch]);
 
   const handleCreate = () => {
     if (postVal) dispatch(postSection(postVal));

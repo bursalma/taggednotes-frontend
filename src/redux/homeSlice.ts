@@ -1,5 +1,5 @@
 import { createSlice, createSelector } from "@reduxjs/toolkit";
-import { all, call, put, takeLatest } from "redux-saga/effects";
+import { all, call, put, takeLatest, select } from "redux-saga/effects";
 
 import { RootState } from "./store";
 import Api, { http } from "./api";
@@ -42,8 +42,8 @@ function* watchSignUp() {
 
 function* signInSaga({ payload }: ReturnType<typeof signIn>): any {
   try {
-    // delete payload["remember"];
     let res = yield call(Api.login, payload);
+    console.log(res);
 
     if (res.status === 200) {
       yield put(signedIn(res.data));
@@ -66,22 +66,56 @@ function* signOutSaga(): any {
 
     if (res.status === 200) {
       yield put(statusSet("synced"));
-      yield put(signedOut());
     } else {
       throw new Error("status not 200");
     }
   } catch (err) {
     yield put(statusSet("offline"));
-    yield put(signedOut());
   }
+  yield put(signedOut());
 }
 
 function* watchSignOut() {
   yield takeLatest(signOut.type, signOutSaga);
 }
 
+function* authSetupSaga(): any {
+  try {
+    let accessToken: string = yield select(selectAccessToken);
+    http.defaults.headers["Authorization"] = `Token ${accessToken}`;
+    let res = yield call(Api.verify, accessToken);
+    console.log(res);
+
+    if (res.status === 200) {
+      yield put(statusSet("synced"));
+    } else {
+      throw new Error("status not 200");
+    }
+  } catch (err) {
+    if (err.response && err.response.status === 401) {
+      let refreshToken: string = yield select(selectRefreshToken);
+      let res = yield call(Api.refresh, refreshToken);
+      console.log(res);
+      let access = res.data.access;
+      http.defaults.headers["Authorization"] = `Token ${access}`;
+      yield put(accessTokenSet(access));
+    }
+    yield put(statusSet("offline"));
+  }
+}
+
+function* watchAuthSetup() {
+  yield takeLatest(authSetup.type, authSetupSaga);
+}
+
 export function* homeRootSaga() {
-  yield all([watchFetchHealth(), watchSignUp(), watchSignIn(), watchSignOut()]);
+  yield all([
+    watchFetchHealth(),
+    watchSignUp(),
+    watchSignIn(),
+    watchSignOut(),
+    watchAuthSetup(),
+  ]);
 }
 
 const homeSlice = createSlice({
@@ -90,14 +124,18 @@ const homeSlice = createSlice({
     username: "",
     email: "",
     accessToken: "",
+    accessExpiration: 0,
     refreshToken: "",
+    refreshExpiration: 0,
     isAuthenticated: false,
     status: "synced",
   } as {
     username: string;
     email: string;
     accessToken: string;
+    accessExpiration: number,
     refreshToken: string;
+    refreshExpiration: number,
     isAuthenticated: boolean;
     status: string;
   },
@@ -114,14 +152,6 @@ const homeSlice = createSlice({
     signUp(state, _) {
       state.status = "syncing";
     },
-    // signedUp(state, { payload }) {
-    //   state.status = "synced";
-    //   state.username = payload.user.username;
-    //   state.email = payload.user.email;
-    //   state.accessToken = payload.access_token;
-    //   state.refreshToken = payload.refresh_token;
-    //   state.isAuthenticated = true;
-    // },
     signUpError(state) {
       state.status = "offline";
     },
@@ -133,7 +163,10 @@ const homeSlice = createSlice({
       state.username = payload.user.username;
       state.email = payload.user.email;
       state.accessToken = payload.access_token;
+      state.accessExpiration = 0
       state.refreshToken = payload.refresh_token;
+      state.refreshExpiration = 0
+      http.defaults.headers["Authorization"] = `Token ${payload.access_token}`;
       state.isAuthenticated = true;
     },
     signInError(state) {
@@ -145,12 +178,17 @@ const homeSlice = createSlice({
     signedOut() {
       delete http.defaults.headers["Authorization"];
     },
-    // signOutError() {},
     isAuthenticatedSet(state, { payload }) {
       state.isAuthenticated = payload;
     },
     statusSet(state, { payload }) {
       state.status = payload;
+    },
+    authSetup(state) {
+      state.status = 'syncing'
+    },
+    accessTokenSet(state, { payload }) {
+      state.accessToken = payload;
     },
   },
 });
@@ -162,16 +200,16 @@ export const {
   healthFetched,
   healthFetchError,
   signUp,
-  // signedUp,
   signUpError,
   signIn,
   signedIn,
   signInError,
   signOut,
   signedOut,
-  // signOutError,
   isAuthenticatedSet,
   statusSet,
+  authSetup,
+  accessTokenSet,
 } = homeSlice.actions;
 
 const selectHome = (state: RootState) => state.home;
@@ -185,74 +223,3 @@ export const selectAccessToken = baseSelector("accessToken");
 export const selectRefreshToken = baseSelector("refreshToken");
 export const selectIsAuthenticated = baseSelector("isAuthenticated");
 export const selectStatus = baseSelector("status");
-
-// function* coordinatorSaga() {
-//   let health: boolean = yield select(selectHealth);
-
-//   if (!health) {
-//     yield call(fetchHealth);
-//     health = yield select(selectHealth);
-//   }
-
-//   if (health) {
-//     yield put(healthCountReset());
-//     yield put(fetchSections());
-
-//     while (true) {
-//       health = yield select(selectHealth);
-//       if (!health) break;
-
-//       console.log("coordinator in control");
-//       yield delay(5000);
-//     }
-//   }
-
-//   let healthCount: number = yield select(selectHealthCount);
-
-//   if (healthCount < 5) {
-//     yield put(healthCountIncrement());
-//     yield delay(10000);
-//     yield put(coordinator());
-//   }
-// }
-
-// export function* watchCoordinator() {
-//   yield takeLatest(coordinator.type, coordinatorSaga);
-// }
-
-// const [token, setToken] = useState('')
-
-// useEffect(() => {
-//   console.log(health);
-
-//   const http = axios.create({
-//     baseURL: process.env.REACT_APP_SERVER_URL,
-//     timeout: 10000,
-//     headers: {
-//       "content-type": "application/json",
-//       // "WWW-Authenticate": token
-//       //   'app-id': 'GET-THE-SECRET-KEY'
-//     },
-//   });
-
-//   let data = {
-//     username: 'user1',
-//     password: 'test.123'
-//   }
-
-//   http.post('auth/login/', data).then(res => setToken(res.data.key))
-
-//   console.log(token)
-
-//   const http2 = axios.create({
-//     baseURL: process.env.REACT_APP_SERVER_URL,
-//     timeout: 10000,
-//     headers: {
-//       "content-type": "application/json",
-//       "Authorization" : `Token ${token}`,
-//       // "WWW-Authenticate": token
-//     },
-//   });
-
-//   http2.get('auth/user/').then(res => console.log(res))
-// }, []);

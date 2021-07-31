@@ -23,6 +23,7 @@ import {
   selectStatus,
   selectUsername,
   signOut,
+  authSetup,
 } from "../redux/homeSlice";
 import SectionArea from "./SectionArea";
 import SignInUp from "./SignInUp";
@@ -30,6 +31,7 @@ import SignInUp from "./SignInUp";
 const Home: React.FC = () => {
   const dispatch = useAppDispatch();
   const [open, setOpen] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
   const username = useAppSelector(selectUsername);
   const status = useAppSelector(selectStatus);
   let isAuthenticated = useAppSelector(selectIsAuthenticated);
@@ -38,7 +40,9 @@ const Home: React.FC = () => {
 
   useEffect((): any => {
     dispatch(fetchHealth());
-  }, [dispatch]);
+    if (isAuthenticated) dispatch(authSetup());
+    setLoading(false)
+  }, [dispatch, isAuthenticated]);
 
   const BaseStatusSwitch = (title: string, icon: JSX.Element) => (
     <Tooltip title={title} placement="left" mouseEnterDelay={1}>
@@ -86,7 +90,7 @@ const Home: React.FC = () => {
           </Space>
         </SettingsContainer>
       </HeaderContainer>
-      {isAuthenticated ? <SectionArea /> : <SignInUp />}
+      {loading ? null : isAuthenticated ? <SectionArea /> : <SignInUp />}
       <Modal
         visible={open}
         // width={1000}
@@ -94,7 +98,7 @@ const Home: React.FC = () => {
         footer={null}
         onCancel={() => setOpen(false)}
       >
-        hello
+        username: {username}
       </Modal>
     </HomeContainer>
   );
