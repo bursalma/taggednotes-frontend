@@ -1,16 +1,6 @@
 import { useState, useEffect } from "react";
 import styled from "styled-components";
-import {
-  Avatar,
-  BackTop,
-  Dropdown,
-  Menu,
-  Typography,
-  Space,
-  Tooltip,
-  Modal,
-  Spin,
-} from "antd";
+import { Avatar, BackTop, Typography, Space, Tooltip, Spin } from "antd";
 import {
   CloseOutlined,
   CheckOutlined,
@@ -22,23 +12,19 @@ import {
   fetchHealth,
   selectIsAuthenticated,
   selectStatus,
-  selectUsername,
-  signOut,
   authSetup,
 } from "../redux/homeSlice";
 import SectionArea from "./SectionArea";
 import SignInUp from "./SignInUp";
+import UserInfo from "./UserInfo";
 
 const Home: React.FC = () => {
   const dispatch = useAppDispatch();
-  const [open, setOpen] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
-  const username = useAppSelector(selectUsername);
   const status = useAppSelector(selectStatus);
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
 
   useEffect((): any => {
-    setOpen(false);
     dispatch(fetchHealth());
     if (isAuthenticated) dispatch(authSetup());
     setLoading(false);
@@ -58,17 +44,6 @@ const Home: React.FC = () => {
     [status: string]: JSX.Element;
   };
 
-  const menu = (
-    <Menu>
-      <Menu.Item key={1} onClick={() => setOpen(true)}>
-        Account
-      </Menu.Item>
-      <Menu.Item key={2} onClick={() => dispatch(signOut())}>
-        Sign Out
-      </Menu.Item>
-    </Menu>
-  );
-
   return (
     <HomeContainer>
       <BackTop />
@@ -77,29 +52,11 @@ const Home: React.FC = () => {
         <SettingsContainer>
           <Space>
             {statusSwitch[status]}
-            {loading ? null : (
-              <Dropdown.Button
-                type="primary"
-                placement="bottomRight"
-                overlay={isAuthenticated ? menu : <div></div>}
-                onClick={() => setOpen(true)}
-              >
-                {isAuthenticated ? username : "Sign In/Up"}
-              </Dropdown.Button>
-            )}
+            {loading ? null : isAuthenticated ? <UserInfo /> : <SignInUp />}
           </Space>
         </SettingsContainer>
       </HeaderContainer>
       {loading ? <Spin size="large" /> : <SectionArea />}
-      <Modal
-        visible={open}
-        // width={1000}
-        closable={false}
-        footer={null}
-        onCancel={() => setOpen(false)}
-      >
-        {isAuthenticated ? <span>username: {username}</span> : <SignInUp />}
-      </Modal>
     </HomeContainer>
   );
 };
@@ -120,13 +77,3 @@ const SettingsContainer = styled.div`
 `;
 
 export default Home;
-
-/* <Modal
-  visible={open}
-  // width={1000}
-  closable={false}
-  footer={null}
-  onCancel={() => setOpen(false)}
->
-  <SignInUp />
-</Modal> */
