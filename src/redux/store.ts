@@ -9,7 +9,7 @@ import { all } from "redux-saga/effects";
 import homeReducer, { homeRootSaga, signedOut } from "./homeSlice";
 import sectionReducer, { sectionRootSaga } from "./sectionSlice";
 import tagReducer, { watchFetchTags } from "./tagSlice";
-import noteReducer, { watchFetchNotes } from "./noteSlice";
+import noteReducer, { noteRootSaga } from "./noteSlice";
 
 const persistConfig = {
   key: "root",
@@ -54,7 +54,7 @@ function* rootSaga() {
     homeRootSaga(),
     sectionRootSaga(),
     watchFetchTags(),
-    watchFetchNotes(),
+    noteRootSaga(),
   ]);
 }
 
