@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import styled from "styled-components";
-import { Spin } from "antd";
 
 import { useAppDispatch, useAppSelector } from "../redux/store";
 import { sectionMounted, selectTagMetaBySection } from "../redux/tagSlice";
@@ -19,9 +18,7 @@ const Section: React.FC<{ sectionId: number }> = ({ sectionId }) => {
 
   return (
     <SectionContainer>
-      {!tagMeta ? (
-        <Spin size="large" />
-      ) : (
+      {!tagMeta ? null : (
         <div>
           <TagArea sectionId={sectionId} />
           <NoteArea sectionId={sectionId} />

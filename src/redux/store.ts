@@ -26,11 +26,11 @@ const appReducer = combineReducers({
 
 const rootReducer = (state: RootState, action: any) => {
   if (action.type === signedOut.type) {
-    return appReducer(undefined, action)
+    return appReducer(undefined, action);
   }
 
-  return appReducer(state, action)
-}
+  return appReducer(state, action);
+};
 
 let midConfig = {
   serializableCheck: {
@@ -54,7 +54,7 @@ function* rootSaga() {
     homeRootSaga(),
     sectionRootSaga(),
     watchFetchTags(),
-    watchFetchNotes()
+    watchFetchNotes(),
   ]);
 }
 
@@ -67,12 +67,3 @@ export type AppDispatch = typeof store.dispatch;
 
 export const useAppDispatch = () => useDispatch<AppDispatch>();
 export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
-
-// export interface GenRes {
-//   config?: any;
-//   data?: any;
-//   headers?: any;
-//   request?: any;
-//   status?: number;
-//   statusText?: string;
-// }

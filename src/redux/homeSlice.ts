@@ -3,16 +3,17 @@ import { all, call, put, takeLatest, select } from "redux-saga/effects";
 
 import { RootState } from "./store";
 import Api, { http } from "./api";
+import { sectionSliceReset } from "./sectionSlice";
+import { tagSliceReset } from "./tagSlice";
+import { noteSliceReset } from "./noteSlice";
+
+const ACCESS_LIFE: number = 50; // ~1 hour
+const REFRESH_LIFE: number = 40000; // ~4 weeks
 
 function* fetchHealthSaga(): any {
   try {
-    let res = yield call(Api.fetchHealth);
-
-    if (res.status === 200) {
-      yield put(healthFetched());
-    } else {
-      throw new Error("status not 200");
-    }
+    yield call(Api.fetchHealth);
+    yield put(healthFetched());
   } catch (err) {
     yield put(healthFetchError());
   }
@@ -25,12 +26,8 @@ function* watchFetchHealth() {
 function* signUpSaga({ payload }: ReturnType<typeof signUp>): any {
   try {
     let res = yield call(Api.register, payload);
-
-    if (res.status === 201) {
-      yield put(signedIn(res.data));
-    } else {
-      throw new Error("status not 201");
-    }
+    yield call(slicesReset);
+    yield put(signedIn(res.data));
   } catch (err) {
     yield put(signUpError());
   }
@@ -43,13 +40,8 @@ function* watchSignUp() {
 function* signInSaga({ payload }: ReturnType<typeof signIn>): any {
   try {
     let res = yield call(Api.login, payload);
-    console.log(res);
-
-    if (res.status === 200) {
-      yield put(signedIn(res.data));
-    } else {
-      throw new Error("status not 200");
-    }
+    yield call(slicesReset);
+    yield put(signedIn(res.data));
   } catch (err) {
     yield put(signInError());
   }
@@ -61,14 +53,9 @@ function* watchSignIn() {
 
 function* signOutSaga(): any {
   try {
-    let res = yield call(Api.logout);
-    console.log(res);
-
-    if (res.status === 200) {
-      yield put(statusSet("synced"));
-    } else {
-      throw new Error("status not 200");
-    }
+    yield call(authCheck);
+    yield call(Api.logout);
+    yield put(statusSet("synced"));
   } catch (err) {
     yield put(statusSet("offline"));
   }
@@ -80,32 +67,43 @@ function* watchSignOut() {
 }
 
 function* authSetupSaga(): any {
-  try {
+  let refreshExpire: number = yield select(selectRefreshExpire);
+  let now = Date.now() / 60000;
+
+  if (now > refreshExpire) {
+    yield put(signOut());
+  } else {
     let accessToken: string = yield select(selectAccessToken);
     http.defaults.headers["Authorization"] = `Token ${accessToken}`;
-    let res = yield call(Api.verify, accessToken);
-    console.log(res);
-
-    if (res.status === 200) {
-      yield put(statusSet("synced"));
-    } else {
-      throw new Error("status not 200");
-    }
-  } catch (err) {
-    if (err.response && err.response.status === 401) {
-      let refreshToken: string = yield select(selectRefreshToken);
-      let res = yield call(Api.refresh, refreshToken);
-      console.log(res);
-      let access = res.data.access;
-      http.defaults.headers["Authorization"] = `Token ${access}`;
-      yield put(accessTokenSet(access));
-    }
-    yield put(statusSet("offline"));
   }
 }
 
 function* watchAuthSetup() {
   yield takeLatest(authSetup.type, authSetupSaga);
+}
+
+export function* authCheck(): any {
+  let accessExpire: number = yield select(selectAccessExpire);
+  let now = Date.now() / 60000;
+
+  if (now > accessExpire) {
+    try {
+      let refreshToken: string = yield select(selectRefreshToken);
+      let res = yield call(Api.refresh, refreshToken);
+      let access = res.data.access;
+      http.defaults.headers["Authorization"] = `Token ${access}`;
+      yield put(accessTokenSet({ access, expire: now + ACCESS_LIFE }));
+      yield put(statusSet("synced"));
+    } catch (err) {
+      yield put(statusSet("offline"));
+    }
+  }
+}
+
+export function* slicesReset(): any {
+  yield put(sectionSliceReset());
+  yield put(tagSliceReset());
+  yield put(noteSliceReset());
 }
 
 export function* homeRootSaga() {
@@ -124,18 +122,18 @@ const homeSlice = createSlice({
     username: "",
     email: "",
     accessToken: "",
-    accessExpiration: 0,
+    accessExpire: 0,
     refreshToken: "",
-    refreshExpiration: 0,
+    refreshExpire: 0,
     isAuthenticated: false,
     status: "synced",
   } as {
     username: string;
     email: string;
     accessToken: string;
-    accessExpiration: number,
+    accessExpire: number;
     refreshToken: string;
-    refreshExpiration: number,
+    refreshExpire: number;
     isAuthenticated: boolean;
     status: string;
   },
@@ -159,13 +157,14 @@ const homeSlice = createSlice({
       state.status = "syncing";
     },
     signedIn(state, { payload }) {
+      const now = Date.now() / 60000;
       state.status = "synced";
       state.username = payload.user.username;
       state.email = payload.user.email;
       state.accessToken = payload.access_token;
-      state.accessExpiration = 0
+      state.accessExpire = now + ACCESS_LIFE;
       state.refreshToken = payload.refresh_token;
-      state.refreshExpiration = 0
+      state.refreshExpire = now + REFRESH_LIFE;
       http.defaults.headers["Authorization"] = `Token ${payload.access_token}`;
       state.isAuthenticated = true;
     },
@@ -181,14 +180,15 @@ const homeSlice = createSlice({
     isAuthenticatedSet(state, { payload }) {
       state.isAuthenticated = payload;
     },
+    accessTokenSet(state, { payload }) {
+      state.accessToken = payload.access;
+      state.accessExpire = payload.expire;
+    },
     statusSet(state, { payload }) {
       state.status = payload;
     },
     authSetup(state) {
-      state.status = 'syncing'
-    },
-    accessTokenSet(state, { payload }) {
-      state.accessToken = payload;
+      state.status = "syncing";
     },
   },
 });
@@ -207,9 +207,9 @@ export const {
   signOut,
   signedOut,
   isAuthenticatedSet,
+  accessTokenSet,
   statusSet,
   authSetup,
-  accessTokenSet,
 } = homeSlice.actions;
 
 const selectHome = (state: RootState) => state.home;
@@ -220,6 +220,8 @@ const baseSelector = (field: string) =>
 export const selectUsername = baseSelector("username");
 export const selectEmail = baseSelector("email");
 export const selectAccessToken = baseSelector("accessToken");
+export const selectAccessExpire = baseSelector("accessExpire");
 export const selectRefreshToken = baseSelector("refreshToken");
+export const selectRefreshExpire = baseSelector("refreshExpire");
 export const selectIsAuthenticated = baseSelector("isAuthenticated");
 export const selectStatus = baseSelector("status");

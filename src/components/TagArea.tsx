@@ -1,12 +1,11 @@
 import { useEffect } from "react";
 import styled from "styled-components";
-import { Spin, Button, Switch, Tooltip, Space } from "antd";
+import { Button, Switch, Tooltip, Space } from "antd";
 import { CloseOutlined } from "@ant-design/icons";
 
 import { useAppDispatch, useAppSelector } from "../redux/store";
 import {
   fetchTags,
-  selectTagLoading,
   filterReset,
   isAndFilterToggled,
   selectTagMetaBySection,
@@ -14,11 +13,12 @@ import {
   selectTagsToDelete,
 } from "../redux/tagSlice";
 import Tag from "./Tag";
+import { selectIsAuthenticated } from "../redux/homeSlice";
 
 const TagArea: React.FC<{ sectionId: number }> = ({ sectionId }) => {
   const dispatch = useAppDispatch();
-  const loading = useAppSelector(selectTagLoading);
   const toDelete = useAppSelector(selectTagsToDelete);
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const allTags = useAppSelector((state) =>
     selectTagsBySection(state, sectionId)
   );
@@ -27,16 +27,13 @@ const TagArea: React.FC<{ sectionId: number }> = ({ sectionId }) => {
   );
 
   useEffect(() => {
-    dispatch(fetchTags(sectionId));
-  }, [dispatch, sectionId]);
+    if (isAuthenticated) dispatch(fetchTags(sectionId));
+  }, [dispatch, sectionId, isAuthenticated]);
 
   return (
     <div>
-      {loading ? (
-        <Spin size="large" />
-      ) : (
-        <TagAreaContainer>
-          <SettingsContainer>
+      <TagAreaContainer>
+        <SettingsContainer>
           <Space>
             <Tooltip
               title="Filter by intersection or union"
@@ -59,28 +56,27 @@ const TagArea: React.FC<{ sectionId: number }> = ({ sectionId }) => {
               onClick={() => dispatch(filterReset(sectionId))}
             />
           </Space>
-          </SettingsContainer>
-          <TagsViewContainer>
-            {allTags
-              .filter(({ id }) => !toDelete.includes(id))
-              .filter((tag) =>
-                activeTagIds.includes(tag.id)
-                  ? false
-                  : activeTagIds.length === 0 || !isAndFilter
-                  ? true
-                  : tag.notes.some((noteId) => activeNoteIds.includes(noteId))
-              )
-              .map((tag) => (
-                <Tag key={tag.id} tagId={tag.id} />
-              ))}
-          </TagsViewContainer>
-          <TagsViewContainer>
-            {activeTagIds.map((tagId: number) => (
-              <Tag key={tagId} tagId={tagId} />
+        </SettingsContainer>
+        <TagsViewContainer>
+          {allTags
+            .filter(({ id }) => !toDelete.includes(id))
+            .filter((tag) =>
+              activeTagIds.includes(tag.id)
+                ? false
+                : activeTagIds.length === 0 || !isAndFilter
+                ? true
+                : tag.notes.some((noteId) => activeNoteIds.includes(noteId))
+            )
+            .map((tag) => (
+              <Tag key={tag.id} tagId={tag.id} />
             ))}
-          </TagsViewContainer>
-        </TagAreaContainer>
-      )}
+        </TagsViewContainer>
+        <TagsViewContainer>
+          {activeTagIds.map((tagId: number) => (
+            <Tag key={tagId} tagId={tagId} />
+          ))}
+        </TagsViewContainer>
+      </TagAreaContainer>
     </div>
   );
 };

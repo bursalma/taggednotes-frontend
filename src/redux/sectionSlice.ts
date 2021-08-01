@@ -3,11 +3,18 @@ import {
   createEntityAdapter,
   createSelector,
 } from "@reduxjs/toolkit";
-import { all, call, put, takeEvery, takeLatest } from "redux-saga/effects";
+import {
+  all,
+  call,
+  put,
+  select,
+  takeEvery,
+  takeLatest,
+} from "redux-saga/effects";
 
 import { RootState } from "./store";
 import Api from "./api";
-import { statusSet } from "./homeSlice";
+import { authCheck, selectIsAuthenticated, statusSet } from "./homeSlice";
 
 export interface SectionObj {
   id: number;
@@ -23,12 +30,14 @@ const sectionAdapter = createEntityAdapter<SectionObj>({
 });
 
 const initialState = sectionAdapter.getInitialState({
+  localId: 0,
   activeKey: "default",
   loading: false,
   error: null,
   toDelete: [],
 } as {
-  activeKey: String;
+  localId: number;
+  activeKey: string;
   loading: boolean;
   error: any;
   toDelete: number[];
@@ -36,14 +45,10 @@ const initialState = sectionAdapter.getInitialState({
 
 function* fetchSectionsSaga(): any {
   try {
+    yield call(authCheck);
     let res = yield call(Api.fetchSections);
-
-    if (res.status === 200) {
-      yield put(statusSet("synced"));
-      yield put(sectionsFetched(res.data));
-    } else {
-      throw new Error("status not 200");
-    }
+    yield put(statusSet("synced"));
+    yield put(sectionsFetched(res.data));
   } catch (err) {
     yield put(statusSet("offline"));
     yield put(sectionsFetchError());
@@ -56,15 +61,20 @@ function* watchFetchSections() {
 
 function* postSectionSaga({ payload }: ReturnType<typeof postSection>): any {
   try {
-    let name: string = payload;
-    let res = yield call(Api.postSection, name);
+    let data: any = { name: payload, rank: 0 };
 
-    if (res.status === 201) {
+    if (yield select(selectIsAuthenticated)) {
+      yield call(authCheck);
+      let res = yield call(Api.postSection, data);
+      data = res.data;
       yield put(statusSet("synced"));
-      yield put(sectionPosted(res.data));
     } else {
-      throw new Error("status not 201");
+      const id = yield select(selectLocalId);
+      data = { id, ...data, rank: id, tag_rank: 0, note_rank: 0 };
+      yield put(localIdIncrement());
     }
+
+    yield put(sectionPosted(data));
   } catch (err) {
     yield put(statusSet("offline"));
     yield put(sectionPostError());
@@ -80,14 +90,12 @@ function* deleteSectionSaga({
 }: ReturnType<typeof deleteSection>): any {
   try {
     let id: number = payload;
-    let res = yield call(Api.deleteSection, id);
-
-    if (res.status === 204) {
+    if (yield select(selectIsAuthenticated)) {
+      yield call(authCheck);
+      yield call(Api.deleteSection, id);
       yield put(statusSet("synced"));
-      yield put(sectionDeleted(id));
-    } else {
-      throw new Error("status not 204");
     }
+    yield put(sectionDeleted(id));
   } catch (err) {
     yield put(statusSet("offline"));
     yield put(sectionDeleteError());
@@ -101,14 +109,14 @@ function* watchDeleteSection() {
 function* putSectionSaga({ payload }: ReturnType<typeof putSection>): any {
   try {
     let { sectionId, putVal } = payload;
-    let res = yield call(Api.putSection, sectionId, putVal);
-
-    if (res.status === 200) {
+    let data = { id: sectionId, name: putVal };
+    if (yield select(selectIsAuthenticated)) {
+      yield call(authCheck);
+      let res = yield call(Api.putSection, data);
+      data = res.data;
       yield put(statusSet("synced"));
-      yield put(sectionPut(res.data));
-    } else {
-      throw new Error("status not 200");
     }
+    yield put(sectionPut(data));
   } catch (err) {
     yield put(statusSet("offline"));
     yield put(sectionPutError());
@@ -142,7 +150,7 @@ const sectionSlice = createSlice({
     sectionsFetchError(state) {
       state.loading = false;
     },
-    postSection(state, action) {
+    postSection(state, _) {
       state.loading = true;
     },
     sectionPosted(state, { payload }) {
@@ -152,7 +160,7 @@ const sectionSlice = createSlice({
     sectionPostError(state) {
       state.loading = false;
     },
-    deleteSection(state, action) {
+    deleteSection(state, _) {
       state.loading = true;
     },
     sectionDeleted(state, { payload }) {
@@ -162,7 +170,7 @@ const sectionSlice = createSlice({
     sectionDeleteError(state) {
       state.loading = false;
     },
-    putSection(state, action) {
+    putSection(state, _) {
       state.loading = true;
     },
     sectionPut(state, { payload }) {
@@ -177,6 +185,12 @@ const sectionSlice = createSlice({
     },
     deleted(state, { payload }) {
       state.toDelete = state.toDelete.filter((id) => id !== payload);
+    },
+    sectionSliceReset(state) {
+      state = initialState;
+    },
+    localIdIncrement(state) {
+      state.localId++;
     },
   },
 });
@@ -198,6 +212,8 @@ export const {
   sectionPutError,
   addToDelete,
   deleted,
+  sectionSliceReset,
+  localIdIncrement,
 } = sectionSlice.actions;
 
 export const {
@@ -216,4 +232,9 @@ export const selectSectionLoading = createSelector(
 export const selectSectionsToDelete = createSelector(
   [selectSection],
   (section) => section.toDelete
+);
+
+export const selectLocalId = createSelector(
+  [selectSection],
+  (section) => section.localId
 );

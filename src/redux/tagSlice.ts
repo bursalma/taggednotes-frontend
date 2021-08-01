@@ -7,7 +7,7 @@ import { call, put, takeLatest } from "redux-saga/effects";
 
 import { RootState } from "./store";
 import Api from "./api";
-import { statusSet } from "./homeSlice";
+import { authCheck, statusSet } from "./homeSlice";
 
 export interface TagObj {
   id: number;
@@ -42,14 +42,10 @@ const initialState = tagAdapter.getInitialState({
 
 function* fetchTagsSaga({ payload }: ReturnType<typeof fetchTags>): any {
   try {
+    yield call(authCheck);
     let res = yield call(Api.fetchTags, payload);
-
-    if (res.status === 200) {
-      yield put(statusSet("synced"));
-      yield put(tagsFetched(res.data));
-    } else {
-      throw new Error("status not 200");
-    }
+    yield put(statusSet("synced"));
+    yield put(tagsFetched(res.data));
   } catch (err) {
     yield put(statusSet("offline"));
     yield put(tagsFetchError());
@@ -118,6 +114,9 @@ const tagSlice = createSlice({
     deleted(state) {
       state.toDelete = [];
     },
+    tagSliceReset(state) {
+      state = initialState;
+    },
   },
 });
 
@@ -133,6 +132,7 @@ export const {
   tagsFetchError,
   addToDelete,
   deleted,
+  tagSliceReset,
 } = tagSlice.actions;
 
 export const {

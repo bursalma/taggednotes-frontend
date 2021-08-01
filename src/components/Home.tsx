@@ -9,6 +9,7 @@ import {
   Space,
   Tooltip,
   Modal,
+  Spin,
 } from "antd";
 import {
   CloseOutlined,
@@ -34,14 +35,13 @@ const Home: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const username = useAppSelector(selectUsername);
   const status = useAppSelector(selectStatus);
-  let isAuthenticated = useAppSelector(selectIsAuthenticated);
-
-  // isAuthenticated = true
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
 
   useEffect((): any => {
+    setOpen(false);
     dispatch(fetchHealth());
     if (isAuthenticated) dispatch(authSetup());
-    setLoading(false)
+    setLoading(false);
   }, [dispatch, isAuthenticated]);
 
   const BaseStatusSwitch = (title: string, icon: JSX.Element) => (
@@ -77,20 +77,20 @@ const Home: React.FC = () => {
         <SettingsContainer>
           <Space>
             {statusSwitch[status]}
-            {isAuthenticated ? (
+            {loading ? null : (
               <Dropdown.Button
                 type="primary"
                 placement="bottomRight"
-                overlay={menu}
+                overlay={isAuthenticated ? menu : <div></div>}
                 onClick={() => setOpen(true)}
               >
-                {username}
+                {isAuthenticated ? username : "Sign In/Up"}
               </Dropdown.Button>
-            ) : null}
+            )}
           </Space>
         </SettingsContainer>
       </HeaderContainer>
-      {loading ? null : isAuthenticated ? <SectionArea /> : <SignInUp />}
+      {loading ? <Spin size="large" /> : <SectionArea />}
       <Modal
         visible={open}
         // width={1000}
@@ -98,7 +98,7 @@ const Home: React.FC = () => {
         footer={null}
         onCancel={() => setOpen(false)}
       >
-        username: {username}
+        {isAuthenticated ? <span>username: {username}</span> : <SignInUp />}
       </Modal>
     </HomeContainer>
   );

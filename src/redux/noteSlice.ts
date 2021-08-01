@@ -7,7 +7,7 @@ import { call, put, takeLatest } from "redux-saga/effects";
 
 import { RootState } from "./store";
 import Api from "./api";
-import { statusSet } from "./homeSlice";
+import { authCheck, statusSet } from "./homeSlice";
 
 export interface NoteObj {
   id: number;
@@ -35,14 +35,10 @@ const initialState = noteAdapter.getInitialState({
 
 function* fetchNotesSaga({ payload }: ReturnType<typeof fetchNotes>): any {
   try {
+    yield call(authCheck);
     let res = yield call(Api.fetchNotes, payload);
-
-    if (res.status === 200) {
-      yield put(statusSet("synced"));
-      yield put(notesFetched(res.data));
-    } else {
-      throw new Error("status not 200");
-    }
+    yield put(statusSet("synced"));
+    yield put(notesFetched(res.data));
   } catch (err) {
     yield put(statusSet("offline"));
     yield put(notesFetchError());
@@ -57,7 +53,7 @@ const noteSlice = createSlice({
   name: "note",
   initialState,
   reducers: {
-    fetchNotes(state, action) {
+    fetchNotes(state, _) {
       state.loading = true;
     },
     notesFetched(state, { payload }) {
@@ -73,6 +69,9 @@ const noteSlice = createSlice({
     deleted(state) {
       state.toDelete = [];
     },
+    noteSliceReset(state) {
+      state = initialState;
+    },
   },
 });
 
@@ -84,6 +83,7 @@ export const {
   notesFetchError,
   addToDelete,
   deleted,
+  noteSliceReset,
 } = noteSlice.actions;
 
 export const {
