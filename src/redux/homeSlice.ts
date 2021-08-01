@@ -83,6 +83,8 @@ function* watchAuthSetup() {
 }
 
 export function* authCheck(): any {
+  let accessToken: string = yield select(selectAccessToken);
+  http.defaults.headers["Authorization"] = `Token ${accessToken}`;
   let accessExpire: number = yield select(selectAccessExpire);
   let now = Date.now() / 60000;
 
