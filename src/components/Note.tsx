@@ -26,7 +26,7 @@ const Note: React.FC<{ noteId: number }> = ({ noteId }) => {
     <div>
       <NoteContainer size="small" onClick={() => setOpen(true)} hoverable>
         <Title level={5}>
-          {note?.rank} {note?.title}
+        {note?.title} {/* {note?.rank} */}
         </Title>
         <p>{note?.content}</p>
       </NoteContainer>
