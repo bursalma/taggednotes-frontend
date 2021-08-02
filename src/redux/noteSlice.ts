@@ -33,10 +33,8 @@ const noteAdapter = createEntityAdapter<NoteObj>({
 
 const initialState = noteAdapter.getInitialState({
   justCreated: undefined,
-  toDelete: [],
 } as {
   justCreated?: number;
-  toDelete: number[];
 });
 
 function* fetchNotesSaga({ payload }: ReturnType<typeof fetchNotes>): any {
@@ -108,7 +106,7 @@ function* watchDeleteNote() {
   yield takeEvery(deleteNote.type, deleteNoteSaga);
 }
 
-function* putNoteSaga({ payload }: ReturnType<typeof putNote>): any {
+function* putNoteSaga({ payload }: ReturnType<typeof putNoteTitle>): any {
   try {
     let data = payload;
     if (yield select(selectIsAuthenticated)) {
@@ -144,23 +142,13 @@ const noteSlice = createSlice({
   reducers: {
     fetchNotes(state, _) {},
     notesFetched(state, { payload }) {
-      noteAdapter.removeMany(state, payload.remove)
+      noteAdapter.removeMany(state, payload.remove);
       noteAdapter.upsertMany(state, payload.add);
     },
     notesFetchError(state) {},
-    addToDelete(state, { payload }) {
-      state.toDelete.push(payload);
-    },
-    deleted(state) {
-      state.toDelete = [];
-    },
-    noteSliceReset(state) {
-      state.ids = initialState.ids;
-      state.entities = initialState.entities;
-    },
     postNote(state, _) {},
     notePosted(state, { payload }) {
-      state.justCreated = payload.id
+      state.justCreated = payload.id;
       noteAdapter.addOne(state, payload);
     },
     notePostError(state) {},
@@ -169,13 +157,16 @@ const noteSlice = createSlice({
       noteAdapter.removeOne(state, payload);
     },
     noteDeleteError(state) {},
-    putNote(state, _) {},
+    putNoteTitle(state, _) {},
+    putNoteContent(state, _) {},
     notePut(state, { payload }) {
       noteAdapter.upsertOne(state, payload);
     },
-    putNoteTitle(state, _) {},
-    putNoteContent(state, _) {},
     notePutError(state) {},
+    noteSliceReset(state) {
+      state.ids = initialState.ids;
+      state.entities = initialState.entities;
+    },
   },
 });
 
@@ -185,20 +176,17 @@ export const {
   fetchNotes,
   notesFetched,
   notesFetchError,
-  addToDelete,
-  deleted,
-  noteSliceReset,
   postNote,
   notePosted,
   notePostError,
   deleteNote,
   noteDeleted,
   noteDeleteError,
-  putNote,
   putNoteTitle,
   putNoteContent,
   notePut,
   notePutError,
+  noteSliceReset,
 } = noteSlice.actions;
 
 export const {
@@ -212,11 +200,6 @@ const selectNote = (state: RootState) => state.note;
 export const selectNotesBySection = createSelector(
   [selectAllNotes, (state: RootState, sectionId: number) => sectionId],
   (notes, sectionId) => notes.filter((note) => note.section === sectionId)
-);
-
-export const selectNotesToDelete = createSelector(
-  [selectNote],
-  (note) => note.toDelete
 );
 
 export const selectJustCreatedNoteId = createSelector(

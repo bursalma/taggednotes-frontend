@@ -1,8 +1,4 @@
-import {
-  createSlice,
-  createEntityAdapter,
-  createSelector,
-} from "@reduxjs/toolkit";
+import { createSlice, createEntityAdapter } from "@reduxjs/toolkit";
 import {
   all,
   call,
@@ -29,11 +25,7 @@ const sectionAdapter = createEntityAdapter<SectionObj>({
   sortComparer: (a, b) => a.rank - b.rank,
 });
 
-const initialState = sectionAdapter.getInitialState({
-  toDelete: [],
-} as {
-  toDelete: number[];
-});
+const initialState = sectionAdapter.getInitialState({} as {});
 
 function* fetchSectionsSaga(): any {
   try {
@@ -153,16 +145,10 @@ const sectionSlice = createSlice({
       sectionAdapter.upsertOne(state, payload);
     },
     sectionPutError(state) {},
-    addToDelete(state, { payload }) {
-      state.toDelete.push(payload);
-    },
-    deleted(state, { payload }) {
-      state.toDelete = state.toDelete.filter((id) => id !== payload);
-    },
     sectionSliceReset(state) {
       state.ids = initialState.ids;
       state.entities = initialState.entities;
-    }
+    },
   },
 });
 
@@ -181,8 +167,6 @@ export const {
   putSection,
   sectionPut,
   sectionPutError,
-  addToDelete,
-  deleted,
   sectionSliceReset,
 } = sectionSlice.actions;
 
@@ -192,9 +176,4 @@ export const {
   selectIds: selectSectionIds,
 } = sectionAdapter.getSelectors((state: RootState) => state.section);
 
-const selectSection = (state: RootState) => state.section;
-
-export const selectSectionsToDelete = createSelector(
-  [selectSection],
-  (section) => section.toDelete
-);
+export const selectSection = (state: RootState) => state.section;

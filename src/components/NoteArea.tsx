@@ -4,19 +4,13 @@ import { Affix, Button } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 
 import { useAppDispatch, useAppSelector } from "../redux/store";
-import {
-  fetchNotes,
-  postNote,
-  selectNotesBySection,
-  selectNotesToDelete,
-} from "../redux/noteSlice";
 import { selectTagMetaBySection } from "../redux/tagSlice";
-import Note from "./Note";
+import { fetchNotes, postNote, selectNotesBySection } from "../redux/noteSlice";
 import { selectIsAuthenticated } from "../redux/homeSlice";
+import Note from "./Note";
 
 const NoteArea: React.FC<{ sectionId: number }> = ({ sectionId }) => {
   const dispatch = useAppDispatch();
-  const toDelete = useAppSelector(selectNotesToDelete);
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const allNotes = useAppSelector((state) =>
     selectNotesBySection(state, sectionId)
@@ -33,7 +27,6 @@ const NoteArea: React.FC<{ sectionId: number }> = ({ sectionId }) => {
     <NoteAreaContainer>
       <NotesViewContainer>
         {allNotes
-          .filter(({ id }) => !toDelete.includes(id))
           .filter((note) =>
             activeTagIds.length === 0
               ? true

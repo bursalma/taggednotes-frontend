@@ -1,27 +1,24 @@
 import { useEffect, useState } from "react";
 import styled from "styled-components";
-import { Tabs, Popconfirm } from "antd";
+import { Tabs, Popconfirm, Input, Modal } from "antd";
 import { CloseOutlined } from "@ant-design/icons";
-import { Input, Modal } from "antd";
 
 import { useAppDispatch, useAppSelector } from "../redux/store";
+import { selectIsAuthenticated } from "../redux/homeSlice";
 import {
   fetchSections,
   postSection,
   deleteSection,
   selectAllSections,
-  selectSectionsToDelete,
 } from "../redux/sectionSlice";
 import Section from "./Section";
 import SectionName from "./SectionName";
-import { selectIsAuthenticated } from "../redux/homeSlice";
 
 const SectionArea: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>("");
   const [postVal, setPostVal] = useState<string>("");
   const [open, setOpen] = useState<boolean>(false);
   const dispatch = useAppDispatch();
-  const toDelete = useAppSelector(selectSectionsToDelete);
   const allSections = useAppSelector(selectAllSections);
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
 
@@ -41,32 +38,30 @@ const SectionArea: React.FC = () => {
         onTabClick={(key) => setActiveTab(key)}
         onEdit={(_, action) => (action === "add" ? setOpen(true) : null)}
       >
-        {allSections
-          .filter(({ id }) => !toDelete.includes(id))
-          .map(({ id, name }) => (
-            <Tabs.TabPane
-              key={id}
-              tab={
-                <SectionName
-                  key={`${id}-name`}
-                  sectionId={id}
-                  sectionName={name}
-                />
-              }
-              closable={activeTab === String(id) ? true : false}
-              closeIcon={
-                <Popconfirm
-                  title="Are you sure you want to delete?"
-                  okText="Delete"
-                  onConfirm={() => dispatch(deleteSection(Number(activeTab)))}
-                >
-                  <CloseOutlined />
-                </Popconfirm>
-              }
-            >
-              <Section key={`${id}-sec`} sectionId={id} />
-            </Tabs.TabPane>
-          ))}
+        {allSections.map(({ id, name }) => (
+          <Tabs.TabPane
+            key={id}
+            tab={
+              <SectionName
+                key={`${id}-name`}
+                sectionId={id}
+                sectionName={name}
+              />
+            }
+            closable={activeTab === String(id) ? true : false}
+            closeIcon={
+              <Popconfirm
+                title="Are you sure you want to delete?"
+                okText="Delete"
+                onConfirm={() => dispatch(deleteSection(Number(activeTab)))}
+              >
+                <CloseOutlined />
+              </Popconfirm>
+            }
+          >
+            <Section key={`${id}-sec`} sectionId={id} />
+          </Tabs.TabPane>
+        ))}
       </TabsContainer>
       <Modal
         visible={open}

@@ -4,20 +4,18 @@ import { Button, Switch, Tooltip, Space } from "antd";
 import { CloseOutlined } from "@ant-design/icons";
 
 import { useAppDispatch, useAppSelector } from "../redux/store";
+import { selectIsAuthenticated } from "../redux/homeSlice";
 import {
   fetchTags,
   filterReset,
   isAndFilterToggled,
   selectTagMetaBySection,
   selectTagsBySection,
-  selectTagsToDelete,
 } from "../redux/tagSlice";
 import Tag from "./Tag";
-import { selectIsAuthenticated } from "../redux/homeSlice";
 
 const TagArea: React.FC<{ sectionId: number }> = ({ sectionId }) => {
   const dispatch = useAppDispatch();
-  const toDelete = useAppSelector(selectTagsToDelete);
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const allTags = useAppSelector((state) =>
     selectTagsBySection(state, sectionId)
@@ -59,7 +57,6 @@ const TagArea: React.FC<{ sectionId: number }> = ({ sectionId }) => {
         </SettingsContainer>
         <TagsViewContainer>
           {allTags
-            .filter(({ id }) => !toDelete.includes(id))
             .filter((tag) =>
               activeTagIds.includes(tag.id)
                 ? false

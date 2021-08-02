@@ -30,10 +30,8 @@ const tagAdapter = createEntityAdapter<TagObj>({
 });
 
 const initialState = tagAdapter.getInitialState({
-  toDelete: [],
   meta: {},
 } as {
-  toDelete: number[];
   meta: {
     [sectionId: number]: {
       isAndFilter: boolean;
@@ -177,17 +175,6 @@ const tagSlice = createSlice({
       tagAdapter.upsertMany(state, payload);
     },
     tagsFetchError(state) {},
-    addToDelete(state, { payload }) {
-      state.toDelete.push(payload);
-    },
-    deleted(state) {
-      state.toDelete = [];
-    },
-    tagSliceReset(state) {
-      state.ids = initialState.ids;
-      state.entities = initialState.entities;
-      state.meta = initialState.meta;
-    },
     postTag(state, _) {},
     tagPosted(state, { payload }) {
       tagAdapter.addOne(state, payload);
@@ -203,6 +190,11 @@ const tagSlice = createSlice({
       tagAdapter.upsertOne(state, payload);
     },
     tagPutError(state) {},
+    tagSliceReset(state) {
+      state.ids = initialState.ids;
+      state.entities = initialState.entities;
+      state.meta = initialState.meta;
+    },
   },
 });
 
@@ -216,9 +208,6 @@ export const {
   fetchTags,
   tagsFetched,
   tagsFetchError,
-  addToDelete,
-  deleted,
-  tagSliceReset,
   postTag,
   tagPosted,
   tagPostError,
@@ -228,6 +217,7 @@ export const {
   putTag,
   tagPut,
   tagPutError,
+  tagSliceReset,
 } = tagSlice.actions;
 
 export const {
@@ -236,7 +226,7 @@ export const {
   selectIds: selectTagIds,
 } = tagAdapter.getSelectors((state: RootState) => state.tag);
 
-const selectTag = (state: RootState) => state.tag;
+export const selectTag = (state: RootState) => state.tag;
 const selectTagMeta = (state: RootState) => state.tag.meta;
 
 export const selectTagMetaBySection = createSelector(
@@ -247,9 +237,4 @@ export const selectTagMetaBySection = createSelector(
 export const selectTagsBySection = createSelector(
   [selectAllTags, (state: RootState, sectionId: number) => sectionId],
   (tags, sectionId) => tags.filter((tag) => tag.section === sectionId)
-);
-
-export const selectTagsToDelete = createSelector(
-  [selectTag],
-  (tag) => tag.toDelete
 );
