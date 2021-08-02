@@ -44,7 +44,7 @@ const NoteArea: React.FC<{ sectionId: number }> = ({ sectionId }) => {
               : note.tag_set.some((tagId) => activeTagIds.includes(tagId))
           )
           .map((note) => (
-            <Note key={note.id} noteId={note.id} />
+            <Note key={note.id} noteId={note.id} sectionId={sectionId} />
           ))}
       </NotesViewContainer>
       <Affix style={{ position: "fixed", right: 40, bottom: 100 }}>

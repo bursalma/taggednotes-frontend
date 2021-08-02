@@ -5,12 +5,18 @@ import { Button, Card, Modal, Input, Typography, Popconfirm } from "antd";
 import { useAppDispatch, useAppSelector } from "../redux/store";
 import {
   deleteNote,
+  // putNote,
+  putNoteTitle,
+  putNoteContent,
   selectJustCreatedNoteId,
   selectNoteById,
 } from "../redux/noteSlice";
 import { DeleteOutlined } from "@ant-design/icons";
 
-const Note: React.FC<{ noteId: number }> = ({ noteId }) => {
+const Note: React.FC<{ noteId: number; sectionId: number }> = ({
+  noteId,
+  sectionId,
+}) => {
   const dispatch = useAppDispatch();
   const justCreatedId = useAppSelector(selectJustCreatedNoteId);
   const [open, setOpen] = useState<boolean>(justCreatedId === noteId);
@@ -18,15 +24,11 @@ const Note: React.FC<{ noteId: number }> = ({ noteId }) => {
   const { TextArea } = Input;
   const note = useAppSelector((state) => selectNoteById(state, noteId));
 
-  const handleChange = (param: any) => {
-    // console.log(param);
-  };
-
   return (
     <div>
       <NoteContainer size="small" onClick={() => setOpen(true)} hoverable>
         <Title level={5}>
-        {note?.title} {/* {note?.rank} */}
+          {note?.title} {/* {note?.rank} */}
         </Title>
         <p>{note?.content}</p>
       </NoteContainer>
@@ -41,14 +43,30 @@ const Note: React.FC<{ noteId: number }> = ({ noteId }) => {
           bordered={false}
           defaultValue={note?.title}
           className="modal-title"
-          onChange={handleChange}
+          onChange={(e) =>
+            dispatch(
+              putNoteTitle({
+                id: noteId,
+                section: sectionId,
+                title: e.target.value,
+              })
+            )
+          }
           placeholder="Title"
         />
         <TextArea
           autoSize
           bordered={false}
           defaultValue={note?.content}
-          onChange={handleChange}
+          onChange={(e) =>
+            dispatch(
+              putNoteContent({
+                id: noteId,
+                section: sectionId,
+                content: e.target.value,
+              })
+            )
+          }
           placeholder="Content"
         />
         <FooterContainer>
@@ -88,6 +106,6 @@ const ModalContainer = styled(Modal)`
 const FooterContainer = styled.div`
   display: flex;
   justify-content: flex-end;
-`
+`;
 
 export default Note;

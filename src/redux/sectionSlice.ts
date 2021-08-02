@@ -102,8 +102,7 @@ function* watchDeleteSection() {
 
 function* putSectionSaga({ payload }: ReturnType<typeof putSection>): any {
   try {
-    let { sectionId, putVal } = payload;
-    let data = { id: sectionId, name: putVal };
+    let data = payload;
     if (yield select(selectIsAuthenticated)) {
       yield call(authCheck);
       let res = yield call(Api.putSection, data);

@@ -14,7 +14,7 @@ const SectionName: React.FC<{ sectionId: number; sectionName: string }> = ({
 
   const handleUpdate = () => {
     if (putVal && putVal !== sectionName)
-      dispatch(putSection({ sectionId, putVal }));
+      dispatch(putSection({ id: sectionId, name: putVal }));
     setOpen(false);
   };
 

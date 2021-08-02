@@ -10,6 +10,7 @@ import {
   select,
   takeEvery,
   takeLatest,
+  throttle,
 } from "redux-saga/effects";
 
 import { RootState } from "./store";
@@ -124,7 +125,8 @@ function* putNoteSaga({ payload }: ReturnType<typeof putNote>): any {
 }
 
 function* watchPutNote() {
-  yield takeEvery(putNote.type, putNoteSaga);
+  yield throttle(3000, putNoteTitle.type, putNoteSaga);
+  yield throttle(5000, putNoteContent.type, putNoteSaga);
 }
 
 export function* noteRootSaga() {
@@ -171,6 +173,8 @@ const noteSlice = createSlice({
     notePut(state, { payload }) {
       noteAdapter.upsertOne(state, payload);
     },
+    putNoteTitle(state, _) {},
+    putNoteContent(state, _) {},
     notePutError(state) {},
   },
 });
@@ -191,6 +195,8 @@ export const {
   noteDeleted,
   noteDeleteError,
   putNote,
+  putNoteTitle,
+  putNoteContent,
   notePut,
   notePutError,
 } = noteSlice.actions;
