@@ -68,7 +68,6 @@ const SectionArea: React.FC = () => {
             </Tabs.TabPane>
           ))}
       </TabsContainer>
-
       <Modal
         visible={open}
         width={300}
@@ -82,6 +81,7 @@ const SectionArea: React.FC = () => {
           onPressEnter={handleCreate}
           allowClear
           onChange={(e) => setPostVal(e.target.value)}
+          placeholder="Create Section"
         />
       </Modal>
     </div>

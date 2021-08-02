@@ -1,12 +1,19 @@
 import { useState } from "react";
 import styled from "styled-components";
-import { Card, Modal, Input, Typography } from "antd";
+import { Button, Card, Modal, Input, Typography, Popconfirm } from "antd";
 
-import { useAppSelector } from "../redux/store";
-import { selectNoteById } from "../redux/noteSlice";
+import { useAppDispatch, useAppSelector } from "../redux/store";
+import {
+  deleteNote,
+  selectJustCreatedNoteId,
+  selectNoteById,
+} from "../redux/noteSlice";
+import { DeleteOutlined } from "@ant-design/icons";
 
 const Note: React.FC<{ noteId: number }> = ({ noteId }) => {
-  const [open, setOpen] = useState<boolean>(false);
+  const dispatch = useAppDispatch();
+  const justCreatedId = useAppSelector(selectJustCreatedNoteId);
+  const [open, setOpen] = useState<boolean>(justCreatedId === noteId);
   const { Title } = Typography;
   const { TextArea } = Input;
   const note = useAppSelector((state) => selectNoteById(state, noteId));
@@ -35,13 +42,25 @@ const Note: React.FC<{ noteId: number }> = ({ noteId }) => {
           defaultValue={note?.title}
           className="modal-title"
           onChange={handleChange}
+          placeholder="Title"
         />
         <TextArea
           autoSize
           bordered={false}
           defaultValue={note?.content}
           onChange={handleChange}
+          placeholder="Content"
         />
+        <FooterContainer>
+          <Popconfirm
+            title="Are you sure you want to delete?"
+            okText="Delete"
+            placement="bottom"
+            onConfirm={() => dispatch(deleteNote(noteId))}
+          >
+            <Button icon={<DeleteOutlined />} type="text"></Button>
+          </Popconfirm>
+        </FooterContainer>
       </ModalContainer>
     </div>
   );
@@ -65,5 +84,10 @@ const ModalContainer = styled(Modal)`
     font-size: 1.2em;
   }
 `;
+
+const FooterContainer = styled.div`
+  display: flex;
+  justify-content: flex-end;
+`
 
 export default Note;

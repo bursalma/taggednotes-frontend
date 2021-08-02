@@ -3,11 +3,18 @@ import {
   createEntityAdapter,
   createSelector,
 } from "@reduxjs/toolkit";
-import { call, put, takeLatest } from "redux-saga/effects";
+import {
+  all,
+  call,
+  put,
+  select,
+  takeEvery,
+  takeLatest,
+} from "redux-saga/effects";
 
 import { RootState } from "./store";
 import Api from "./api";
-import { authCheck, statusSet } from "./homeSlice";
+import { authCheck, selectIsAuthenticated, statusSet } from "./homeSlice";
 
 export interface TagObj {
   id: number;
@@ -23,13 +30,9 @@ const tagAdapter = createEntityAdapter<TagObj>({
 });
 
 const initialState = tagAdapter.getInitialState({
-  loading: false,
-  error: null,
   toDelete: [],
   meta: {},
 } as {
-  loading: boolean;
-  error: any;
   toDelete: number[];
   meta: {
     [sectionId: number]: {
@@ -52,8 +55,79 @@ function* fetchTagsSaga({ payload }: ReturnType<typeof fetchTags>): any {
   }
 }
 
-export function* watchFetchTags() {
+function* watchFetchTags() {
   yield takeLatest(fetchTags.type, fetchTagsSaga);
+}
+
+function* postTagSaga({ payload }: ReturnType<typeof postTag>): any {
+  try {
+    let data = payload;
+    if (yield select(selectIsAuthenticated)) {
+      yield call(authCheck);
+      let res = yield call(Api.postTag, data);
+      data = res.data;
+      yield put(statusSet("synced"));
+    } else {
+      let id = 1;
+      data = { id, ...data, rank: id };
+    }
+    yield put(tagPosted(data));
+  } catch (err) {
+    yield put(statusSet("offline"));
+    yield put(tagPostError());
+  }
+}
+
+function* watchPostTag() {
+  yield takeEvery(postTag.type, postTagSaga);
+}
+
+function* deleteTagSaga({ payload }: ReturnType<typeof deleteTag>): any {
+  try {
+    let id: number = payload;
+    if (yield select(selectIsAuthenticated)) {
+      yield call(authCheck);
+      yield call(Api.deleteTag, id);
+      yield put(statusSet("synced"));
+    }
+    yield put(tagDeleted(id));
+  } catch (err) {
+    yield put(statusSet("offline"));
+    yield put(tagDeleteError());
+  }
+}
+
+function* watchDeleteTag() {
+  yield takeEvery(deleteTag.type, deleteTagSaga);
+}
+
+function* putTagSaga({ payload }: ReturnType<typeof putTag>): any {
+  try {
+    let data = payload;
+    if (yield select(selectIsAuthenticated)) {
+      yield call(authCheck);
+      let res = yield call(Api.putTag, payload);
+      data = res.data;
+      yield put(statusSet("synced"));
+    }
+    yield put(tagPut(data));
+  } catch (err) {
+    yield put(statusSet("offline"));
+    yield put(tagPutError());
+  }
+}
+
+function* watchPutTag() {
+  yield takeEvery(putTag.type, putTagSaga);
+}
+
+export function* tagRootSaga() {
+  yield all([
+    watchFetchTags(),
+    watchPostTag(),
+    watchDeleteTag(),
+    watchPutTag(),
+  ]);
 }
 
 const tagSlice = createSlice({
@@ -98,16 +172,11 @@ const tagSlice = createSlice({
       meta[sectionId].activeTagIds = [];
       meta[sectionId].activeNoteIds = [];
     },
-    fetchTags(state, action) {
-      state.loading = true;
-    },
+    fetchTags(state, action) {},
     tagsFetched(state, { payload }) {
       tagAdapter.upsertMany(state, payload);
-      state.loading = false;
     },
-    tagsFetchError(state) {
-      state.loading = false;
-    },
+    tagsFetchError(state) {},
     addToDelete(state, { payload }) {
       state.toDelete.push(payload);
     },
@@ -115,8 +184,25 @@ const tagSlice = createSlice({
       state.toDelete = [];
     },
     tagSliceReset(state) {
-      state = initialState;
+      state.ids = initialState.ids;
+      state.entities = initialState.entities;
+      state.meta = initialState.meta;
     },
+    postTag(state, _) {},
+    tagPosted(state, { payload }) {
+      tagAdapter.addOne(state, payload);
+    },
+    tagPostError(state) {},
+    deleteTag(state, _) {},
+    tagDeleted(state, { payload }) {
+      tagAdapter.removeOne(state, payload);
+    },
+    tagDeleteError(state) {},
+    putTag(state, _) {},
+    tagPut(state, { payload }) {
+      tagAdapter.upsertOne(state, payload);
+    },
+    tagPutError(state) {},
   },
 });
 
@@ -133,6 +219,15 @@ export const {
   addToDelete,
   deleted,
   tagSliceReset,
+  postTag,
+  tagPosted,
+  tagPostError,
+  deleteTag,
+  tagDeleted,
+  tagDeleteError,
+  putTag,
+  tagPut,
+  tagPutError,
 } = tagSlice.actions;
 
 export const {
@@ -142,12 +237,6 @@ export const {
 } = tagAdapter.getSelectors((state: RootState) => state.tag);
 
 const selectTag = (state: RootState) => state.tag;
-
-export const selectTagLoading = createSelector(
-  [selectTag],
-  (tag) => tag.loading
-);
-
 const selectTagMeta = (state: RootState) => state.tag.meta;
 
 export const selectTagMetaBySection = createSelector(

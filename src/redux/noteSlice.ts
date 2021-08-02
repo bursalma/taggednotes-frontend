@@ -31,14 +31,10 @@ const noteAdapter = createEntityAdapter<NoteObj>({
 });
 
 const initialState = noteAdapter.getInitialState({
-  localId: 0,
-  loading: false,
-  error: null,
+  justCreated: undefined,
   toDelete: [],
 } as {
-  localId: number;
-  loading: boolean;
-  error: any;
+  justCreated?: number;
   toDelete: number[];
 });
 
@@ -47,7 +43,11 @@ function* fetchNotesSaga({ payload }: ReturnType<typeof fetchNotes>): any {
     yield call(authCheck);
     let res = yield call(Api.fetchNotes, payload);
     yield put(statusSet("synced"));
-    yield put(notesFetched(res.data));
+    const allNotes = yield select((state) =>
+      selectNotesBySection(state, payload)
+    );
+    const allNoteIds = allNotes.map((note: NoteObj) => note.id);
+    yield put(notesFetched({ add: res.data, remove: allNoteIds }));
   } catch (err) {
     yield put(statusSet("offline"));
     yield put(notesFetchError());
@@ -60,16 +60,22 @@ function* watchFetchNotes() {
 
 function* postNoteSaga({ payload }: ReturnType<typeof postNote>): any {
   try {
-    let data = payload;
+    const allNotes = yield select((state) =>
+      selectNotesBySection(state, payload)
+    );
+    const rank =
+      allNotes.reduce(
+        (max: number, curr: NoteObj) => (max = Math.max(max, curr.rank)),
+        0
+      ) + 10000;
+    let data: any = { section: payload, rank };
     if (yield select(selectIsAuthenticated)) {
       yield call(authCheck);
       let res = yield call(Api.postNote, data);
       data = res.data;
       yield put(statusSet("synced"));
     } else {
-      const id = yield select(selectLocalId);
-      data = { id, ...data, rank: id };
-      yield put(localIdIncrement());
+      data = { id: rank, ...data, title: "", content: "" };
     }
     yield put(notePosted(data));
   } catch (err) {
@@ -134,16 +140,12 @@ const noteSlice = createSlice({
   name: "note",
   initialState,
   reducers: {
-    fetchNotes(state, _) {
-      state.loading = true;
-    },
+    fetchNotes(state, _) {},
     notesFetched(state, { payload }) {
-      noteAdapter.upsertMany(state, payload);
-      state.loading = false;
+      noteAdapter.removeMany(state, payload.remove)
+      noteAdapter.upsertMany(state, payload.add);
     },
-    notesFetchError(state) {
-      state.loading = false;
-    },
+    notesFetchError(state) {},
     addToDelete(state, { payload }) {
       state.toDelete.push(payload);
     },
@@ -151,41 +153,25 @@ const noteSlice = createSlice({
       state.toDelete = [];
     },
     noteSliceReset(state) {
-      state = initialState;
+      state.ids = initialState.ids;
+      state.entities = initialState.entities;
     },
-    postNote(state, _) {
-      state.loading = true;
-    },
+    postNote(state, _) {},
     notePosted(state, { payload }) {
+      state.justCreated = payload.id
       noteAdapter.addOne(state, payload);
-      state.loading = false;
     },
-    notePostError(state) {
-      state.loading = false;
-    },
-    deleteNote(state, _) {
-      state.loading = true;
-    },
+    notePostError(state) {},
+    deleteNote(state, _) {},
     noteDeleted(state, { payload }) {
       noteAdapter.removeOne(state, payload);
-      state.loading = false;
     },
-    noteDeleteError(state) {
-      state.loading = false;
-    },
-    putNote(state, _) {
-      state.loading = true;
-    },
+    noteDeleteError(state) {},
+    putNote(state, _) {},
     notePut(state, { payload }) {
       noteAdapter.upsertOne(state, payload);
-      state.loading = false;
     },
-    notePutError(state) {
-      state.loading = false;
-    },
-    localIdIncrement(state) {
-      state.localId++;
-    },
+    notePutError(state) {},
   },
 });
 
@@ -207,7 +193,6 @@ export const {
   putNote,
   notePut,
   notePutError,
-  localIdIncrement,
 } = noteSlice.actions;
 
 export const {
@@ -217,11 +202,6 @@ export const {
 } = noteAdapter.getSelectors((state: RootState) => state.note);
 
 const selectNote = (state: RootState) => state.note;
-
-export const selectNoteLoading = createSelector(
-  [selectNote],
-  (note) => note.loading
-);
 
 export const selectNotesBySection = createSelector(
   [selectAllNotes, (state: RootState, sectionId: number) => sectionId],
@@ -233,7 +213,7 @@ export const selectNotesToDelete = createSelector(
   (note) => note.toDelete
 );
 
-export const selectLocalId = createSelector(
+export const selectJustCreatedNoteId = createSelector(
   [selectNote],
-  (note) => note.localId
+  (note) => note.justCreated
 );

@@ -30,16 +30,8 @@ const sectionAdapter = createEntityAdapter<SectionObj>({
 });
 
 const initialState = sectionAdapter.getInitialState({
-  localId: 0,
-  activeKey: "default",
-  loading: false,
-  error: null,
   toDelete: [],
 } as {
-  localId: number;
-  activeKey: string;
-  loading: boolean;
-  error: any;
   toDelete: number[];
 });
 
@@ -61,19 +53,21 @@ function* watchFetchSections() {
 
 function* postSectionSaga({ payload }: ReturnType<typeof postSection>): any {
   try {
-    let data: any = { name: payload, rank: 0 };
-
+    const allSections = yield select(selectAllSections);
+    const rank =
+      allSections.reduce(
+        (max: number, curr: SectionObj) => (max = Math.max(max, curr.rank)),
+        0
+      ) + 1;
+    let data: any = { name: payload, rank };
     if (yield select(selectIsAuthenticated)) {
       yield call(authCheck);
       let res = yield call(Api.postSection, data);
       data = res.data;
       yield put(statusSet("synced"));
     } else {
-      const id = yield select(selectLocalId);
-      data = { id, ...data, rank: id, tag_rank: 0, note_rank: 0 };
-      yield put(localIdIncrement());
+      data = { id: rank, ...data, tag_rank: 1, note_rank: 1 };
     }
-
     yield put(sectionPosted(data));
   } catch (err) {
     yield put(statusSet("offline"));
@@ -140,46 +134,26 @@ const sectionSlice = createSlice({
   name: "section",
   initialState,
   reducers: {
-    fetchSections(state) {
-      state.loading = true;
-    },
+    fetchSections(state) {},
     sectionsFetched(state, { payload }) {
       sectionAdapter.setAll(state, payload);
-      state.loading = false;
     },
-    sectionsFetchError(state) {
-      state.loading = false;
-    },
-    postSection(state, _) {
-      state.loading = true;
-    },
+    sectionsFetchError(state) {},
+    postSection(state, _) {},
     sectionPosted(state, { payload }) {
       sectionAdapter.addOne(state, payload);
-      state.loading = false;
     },
-    sectionPostError(state) {
-      state.loading = false;
-    },
-    deleteSection(state, _) {
-      state.loading = true;
-    },
+    sectionPostError(state) {},
+    deleteSection(state, _) {},
     sectionDeleted(state, { payload }) {
       sectionAdapter.removeOne(state, payload);
-      state.loading = false;
     },
-    sectionDeleteError(state) {
-      state.loading = false;
-    },
-    putSection(state, _) {
-      state.loading = true;
-    },
+    sectionDeleteError(state) {},
+    putSection(state, _) {},
     sectionPut(state, { payload }) {
       sectionAdapter.upsertOne(state, payload);
-      state.loading = false;
     },
-    sectionPutError(state) {
-      state.loading = false;
-    },
+    sectionPutError(state) {},
     addToDelete(state, { payload }) {
       state.toDelete.push(payload);
     },
@@ -187,11 +161,9 @@ const sectionSlice = createSlice({
       state.toDelete = state.toDelete.filter((id) => id !== payload);
     },
     sectionSliceReset(state) {
-      state = initialState;
-    },
-    localIdIncrement(state) {
-      state.localId++;
-    },
+      state.ids = initialState.ids;
+      state.entities = initialState.entities;
+    }
   },
 });
 
@@ -213,7 +185,6 @@ export const {
   addToDelete,
   deleted,
   sectionSliceReset,
-  localIdIncrement,
 } = sectionSlice.actions;
 
 export const {
@@ -224,17 +195,7 @@ export const {
 
 const selectSection = (state: RootState) => state.section;
 
-export const selectSectionLoading = createSelector(
-  [selectSection],
-  (section) => section.loading
-);
-
 export const selectSectionsToDelete = createSelector(
   [selectSection],
   (section) => section.toDelete
-);
-
-export const selectLocalId = createSelector(
-  [selectSection],
-  (section) => section.localId
 );

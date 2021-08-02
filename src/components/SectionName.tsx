@@ -23,14 +23,17 @@ const SectionName: React.FC<{ sectionId: number; sectionName: string }> = ({
       <div onDoubleClick={() => setOpen(true)}>{sectionName}</div>
       <Modal
         visible={open}
+        width={300}
         closable={false}
         okText="Update"
         onOk={handleUpdate}
         onCancel={() => setOpen(false)}
       >
         <Input
+          maxLength={30}
           defaultValue={sectionName}
           onChange={(e) => setPutVal(e.target.value)}
+          placeholder="Update Section Name"
         />
       </Modal>
     </div>

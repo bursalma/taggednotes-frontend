@@ -1,9 +1,12 @@
 import { useEffect } from "react";
 import styled from "styled-components";
+import { Affix, Button } from "antd";
+import { PlusOutlined } from "@ant-design/icons";
 
 import { useAppDispatch, useAppSelector } from "../redux/store";
 import {
   fetchNotes,
+  postNote,
   selectNotesBySection,
   selectNotesToDelete,
 } from "../redux/noteSlice";
@@ -44,6 +47,15 @@ const NoteArea: React.FC<{ sectionId: number }> = ({ sectionId }) => {
             <Note key={note.id} noteId={note.id} />
           ))}
       </NotesViewContainer>
+      <Affix style={{ position: "fixed", right: 40, bottom: 100 }}>
+        <Button
+          type="primary"
+          shape="circle"
+          onClick={() => dispatch(postNote(sectionId))}
+          size="large"
+          icon={<PlusOutlined />}
+        />
+      </Affix>
     </NoteAreaContainer>
   );
 };

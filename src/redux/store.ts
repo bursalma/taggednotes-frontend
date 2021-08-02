@@ -8,7 +8,7 @@ import { all } from "redux-saga/effects";
 
 import homeReducer, { homeRootSaga, signedOut } from "./homeSlice";
 import sectionReducer, { sectionRootSaga } from "./sectionSlice";
-import tagReducer, { watchFetchTags } from "./tagSlice";
+import tagReducer, { tagRootSaga } from "./tagSlice";
 import noteReducer, { noteRootSaga } from "./noteSlice";
 
 const persistConfig = {
@@ -28,7 +28,6 @@ const rootReducer = (state: RootState, action: any) => {
   if (action.type === signedOut.type) {
     return appReducer(undefined, action);
   }
-
   return appReducer(state, action);
 };
 
@@ -53,7 +52,7 @@ function* rootSaga() {
   yield all([
     homeRootSaga(),
     sectionRootSaga(),
-    watchFetchTags(),
+    tagRootSaga(),
     noteRootSaga(),
   ]);
 }
