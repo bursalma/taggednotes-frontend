@@ -80,7 +80,7 @@ function* postTagSaga({ payload }: ReturnType<typeof postTag>): any {
       data = res.data;
       yield put(statusSet("synced"));
     } else {
-      data = { id: rank, ...data, notes: [] };
+      data = { id: rank, ...data };
     }
     yield put(tagPosted(data));
     for (let noteId of data.notes) {
