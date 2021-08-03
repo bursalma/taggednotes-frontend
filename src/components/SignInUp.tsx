@@ -67,6 +67,7 @@ const SignInUp: React.FC = () => {
                 name="username"
                 rules={[
                   { required: true, message: "Please input your Username!" },
+                  { min: 3, message: 'Username must be minimum 3 characters.' }
                 ]}
               >
                 <Input prefix={<UserOutlined />} placeholder="Username" />
@@ -84,6 +85,7 @@ const SignInUp: React.FC = () => {
                 hasFeedback
                 rules={[
                   { required: true, message: "Please input your Password!" },
+                  { min: 8, message: 'Password must be minimum 8 characters.' },
                 ]}
               >
                 <Input.Password

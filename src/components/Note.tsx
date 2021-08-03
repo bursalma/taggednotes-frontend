@@ -1,35 +1,29 @@
 import { useState } from "react";
 import styled from "styled-components";
 import { Button, Card, Modal, Input, Typography, Popconfirm } from "antd";
+import { DeleteOutlined } from "@ant-design/icons";
 
 import { useAppDispatch, useAppSelector } from "../redux/store";
 import {
   deleteNote,
-  // putNote,
   putNoteTitle,
   putNoteContent,
   selectJustCreatedNoteId,
   selectNoteById,
 } from "../redux/noteSlice";
-import { DeleteOutlined } from "@ant-design/icons";
 
-const Note: React.FC<{ noteId: number; sectionId: number }> = ({
-  noteId,
-  sectionId,
-}) => {
+const Note: React.FC<{ noteId: number }> = ({ noteId }) => {
   const dispatch = useAppDispatch();
   const justCreatedId = useAppSelector(selectJustCreatedNoteId);
   const [open, setOpen] = useState<boolean>(justCreatedId === noteId);
-  const { Title } = Typography;
-  const { TextArea } = Input;
   const note = useAppSelector((state) => selectNoteById(state, noteId));
 
   return (
     <div>
       <NoteContainer size="small" onClick={() => setOpen(true)} hoverable>
-        <Title level={5}>
+        <Typography.Title level={5}>
           {note?.title} {/* {note?.rank} */}
-        </Title>
+        </Typography.Title>
         <p>{note?.content}</p>
       </NoteContainer>
       <ModalContainer
@@ -38,36 +32,36 @@ const Note: React.FC<{ noteId: number; sectionId: number }> = ({
         footer={null}
         onCancel={() => setOpen(false)}
       >
-        <TextArea
+        <Input.TextArea
           autoSize
           bordered={false}
           defaultValue={note?.title}
           className="modal-title"
+          placeholder="Title"
           onChange={(e) =>
             dispatch(
               putNoteTitle({
                 id: noteId,
-                section: sectionId,
+                section: note?.section,
                 title: e.target.value,
               })
             )
           }
-          placeholder="Title"
         />
-        <TextArea
+        <Input.TextArea
           autoSize
           bordered={false}
           defaultValue={note?.content}
+          placeholder="Content"
           onChange={(e) =>
             dispatch(
               putNoteContent({
                 id: noteId,
-                section: sectionId,
+                section: note?.section,
                 content: e.target.value,
               })
             )
           }
-          placeholder="Content"
         />
         <FooterContainer>
           <Popconfirm

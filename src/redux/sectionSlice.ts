@@ -50,7 +50,7 @@ function* postSectionSaga({ payload }: ReturnType<typeof postSection>): any {
       allSections.reduce(
         (max: number, curr: SectionObj) => (max = Math.max(max, curr.rank)),
         0
-      ) + 1;
+      ) + 10000;
     let data: any = { name: payload, rank };
     if (yield select(selectIsAuthenticated)) {
       yield call(authCheck);

@@ -35,6 +35,7 @@ const initialState = tagAdapter.getInitialState({
   meta: {
     [sectionId: number]: {
       isAndFilter: boolean;
+      isDeleteOn: boolean;
       activeTagIds: number[];
       activeNoteIds: number[];
     };
@@ -46,7 +47,11 @@ function* fetchTagsSaga({ payload }: ReturnType<typeof fetchTags>): any {
     yield call(authCheck);
     let res = yield call(Api.fetchTags, payload);
     yield put(statusSet("synced"));
-    yield put(tagsFetched(res.data));
+    const allTags = yield select((state) =>
+      selectTagsBySection(state, payload)
+    );
+    const allTagIds = allTags.map((tag: TagObj) => tag.id);
+    yield put(tagsFetched({ add: res.data, remove: allTagIds }));
   } catch (err) {
     yield put(statusSet("offline"));
     yield put(tagsFetchError());
@@ -59,15 +64,22 @@ function* watchFetchTags() {
 
 function* postTagSaga({ payload }: ReturnType<typeof postTag>): any {
   try {
-    let data = payload;
+    const allTags = yield select((state) =>
+      selectTagsBySection(state, payload.section)
+    );
+    const rank =
+      allTags.reduce(
+        (max: number, curr: TagObj) => (max = Math.max(max, curr.rank)),
+        0
+      ) + 10000;
+    let data: any = { rank, ...payload };
     if (yield select(selectIsAuthenticated)) {
       yield call(authCheck);
       let res = yield call(Api.postTag, data);
       data = res.data;
       yield put(statusSet("synced"));
     } else {
-      let id = 1;
-      data = { id, ...data, rank: id };
+      data = { id: rank, ...data, notes: [] };
     }
     yield put(tagPosted(data));
   } catch (err) {
@@ -137,15 +149,19 @@ const tagSlice = createSlice({
       if (!meta[sectionId]) {
         meta[sectionId] = {
           isAndFilter: true,
+          isDeleteOn: false,
           activeTagIds: [],
           activeNoteIds: [],
         };
       }
     },
     isAndFilterToggled({ meta }, { payload }) {
-      let sectionId = payload;
-      let tagMeta = meta[sectionId];
+      let tagMeta = meta[payload];
       tagMeta.isAndFilter = !tagMeta.isAndFilter;
+    },
+    isDeleteOnToggled({ meta }, { payload }) {
+      let tagMeta = meta[payload];
+      tagMeta.isDeleteOn = !tagMeta.isDeleteOn;
     },
     tagToggled(state, action) {
       let { sectionId, tagId } = action.payload;
@@ -172,7 +188,8 @@ const tagSlice = createSlice({
     },
     fetchTags(state, action) {},
     tagsFetched(state, { payload }) {
-      tagAdapter.upsertMany(state, payload);
+      tagAdapter.removeMany(state, payload.remove);
+      tagAdapter.upsertMany(state, payload.add);
     },
     tagsFetchError(state) {},
     postTag(state, _) {},
@@ -203,6 +220,7 @@ export default tagSlice.reducer;
 export const {
   sectionMounted,
   isAndFilterToggled,
+  isDeleteOnToggled,
   tagToggled,
   filterReset,
   fetchTags,
