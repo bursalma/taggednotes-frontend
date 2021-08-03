@@ -35,7 +35,6 @@ const initialState = tagAdapter.getInitialState({
   meta: {
     [sectionId: number]: {
       isAndFilter: boolean;
-      isDeleteOn: boolean;
       activeTagIds: number[];
       activeNoteIds: number[];
     };
@@ -149,7 +148,6 @@ const tagSlice = createSlice({
       if (!meta[sectionId]) {
         meta[sectionId] = {
           isAndFilter: true,
-          isDeleteOn: false,
           activeTagIds: [],
           activeNoteIds: [],
         };
@@ -158,10 +156,6 @@ const tagSlice = createSlice({
     isAndFilterToggled({ meta }, { payload }) {
       let tagMeta = meta[payload];
       tagMeta.isAndFilter = !tagMeta.isAndFilter;
-    },
-    isDeleteOnToggled({ meta }, { payload }) {
-      let tagMeta = meta[payload];
-      tagMeta.isDeleteOn = !tagMeta.isDeleteOn;
     },
     tagToggled(state, action) {
       let { sectionId, tagId } = action.payload;
@@ -220,7 +214,6 @@ export default tagSlice.reducer;
 export const {
   sectionMounted,
   isAndFilterToggled,
-  isDeleteOnToggled,
   tagToggled,
   filterReset,
   fetchTags,

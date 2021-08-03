@@ -14,9 +14,8 @@ import {
 const Tag: React.FC<{ tagId: number }> = ({ tagId }) => {
   const dispatch = useAppDispatch();
   const [open, setOpen] = useState<boolean>(false);
-  const [visible, setVisible] = useState<boolean>(false);
   const tag = useAppSelector((state) => selectTagById(state, tagId));
-  const { isDeleteOn, activeTagIds } = useAppSelector((state) =>
+  const { activeTagIds } = useAppSelector((state) =>
     selectTagMetaBySection(state, tag?.section!)
   );
   const active = activeTagIds.includes(tagId);
@@ -38,45 +37,28 @@ const Tag: React.FC<{ tagId: number }> = ({ tagId }) => {
         title="Are you sure you want to delete?"
         okText="Delete"
         placement="bottom"
-        // visible={visible}
-        // onCancel={() => setVisible(false)}
         onConfirm={() => dispatch(deleteTag(tagId))}
       >
-        <Menu.Item key={2}>
-          Delete
-        </Menu.Item>
+        <Menu.Item key={2}>Delete</Menu.Item>
       </Popconfirm>
     </Menu>
   );
 
   return (
     <div>
-      <Popconfirm
-        title="Are you sure you want to delete?"
-        okText="Delete"
-        visible={visible}
-        onCancel={() => setVisible(false)}
-        onConfirm={() => dispatch(deleteTag(tagId))}
-      >
-        <Dropdown overlay={menu} trigger={["contextMenu"]}>
-          <TagContainer
-            shape="round"
-            size="small"
-            type="primary"
-            ghost={active}
-            onClick={
-              isDeleteOn
-                ? () => setVisible(true)
-                : () =>
-                    dispatch(
-                      tagToggled({ sectionId: tag?.section, tagId: tagId })
-                    )
-            }
-          >
-            {label}
-          </TagContainer>
-        </Dropdown>
-      </Popconfirm>
+      <Dropdown overlay={menu} trigger={["contextMenu"]}>
+        <TagContainer
+          shape="round"
+          size="small"
+          type="primary"
+          ghost={active}
+          onClick={() =>
+            dispatch(tagToggled({ sectionId: tag?.section, tagId: tagId }))
+          }
+        >
+          {label}
+        </TagContainer>
+      </Dropdown>
       <Modal
         visible={open}
         width={300}

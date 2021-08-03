@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import styled from "styled-components";
 import { Button, Tooltip, Space, Modal, Input } from "antd";
-import { CloseOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
+import { CloseOutlined, PlusOutlined } from "@ant-design/icons";
 
 import { useAppDispatch, useAppSelector } from "../redux/store";
 import { selectIsAuthenticated } from "../redux/homeSlice";
@@ -9,7 +9,6 @@ import {
   fetchTags,
   filterReset,
   isAndFilterToggled,
-  isDeleteOnToggled,
   postTag,
   selectTagMetaBySection,
   selectTagsBySection,
@@ -24,7 +23,7 @@ const TagArea: React.FC<{ sectionId: number }> = ({ sectionId }) => {
   const allTags = useAppSelector((state) =>
     selectTagsBySection(state, sectionId)
   );
-  const { isAndFilter, isDeleteOn, activeTagIds, activeNoteIds } =
+  const { isAndFilter, activeTagIds, activeNoteIds } =
     useAppSelector((state) => selectTagMetaBySection(state, sectionId));
 
   useEffect(() => {
@@ -61,14 +60,6 @@ const TagArea: React.FC<{ sectionId: number }> = ({ sectionId }) => {
             type="primary"
             icon={<CloseOutlined />}
             onClick={() => dispatch(filterReset(sectionId))}
-          />
-          <Button
-            shape="circle"
-            size="small"
-            type="primary"
-            ghost={isDeleteOn}
-            icon={<DeleteOutlined />}
-            onClick={() => dispatch(isDeleteOnToggled(sectionId))}
           />
         </Space>
       </SettingsContainer>
