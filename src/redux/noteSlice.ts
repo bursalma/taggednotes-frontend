@@ -11,12 +11,13 @@ import {
   takeEvery,
   takeLatest,
   throttle,
-  putResolve
+  // putResolve
 } from "redux-saga/effects";
 
 import { RootState } from "./store";
 import Api from "./api";
 import { authCheck, selectIsAuthenticated, statusSet } from "./homeSlice";
+import { selectTagById, tagPut } from "./tagSlice";
 
 export interface NoteObj {
   id: number;
@@ -40,7 +41,7 @@ const initialState = noteAdapter.getInitialState({
 
 function* fetchNotesSaga({ payload }: ReturnType<typeof fetchNotes>): any {
   try {
-    yield putResolve(authCheck);
+    yield call(authCheck);
     let res = yield call(Api.fetchNotes, payload);
     yield put(statusSet("synced"));
     const allNotes = yield select((state) =>
@@ -68,9 +69,9 @@ function* postNoteSaga({ payload }: ReturnType<typeof postNote>): any {
         (max: number, curr: NoteObj) => (max = Math.max(max, curr.rank)),
         0
       ) + 10000;
-    let data: any = { section: payload, rank };
+    let data: any = { section: payload, rank, tag_set: [] };
     if (yield select(selectIsAuthenticated)) {
-      yield putResolve(authCheck);
+      yield call(authCheck);
       let res = yield call(Api.postNote, data);
       data = res.data;
       yield put(statusSet("synced"));
@@ -92,7 +93,7 @@ function* deleteNoteSaga({ payload }: ReturnType<typeof deleteNote>): any {
   try {
     let id: number = payload;
     if (yield select(selectIsAuthenticated)) {
-      yield putResolve(authCheck);
+      yield call(authCheck);
       yield call(Api.deleteNote, id);
       yield put(statusSet("synced"));
     }
@@ -111,12 +112,16 @@ function* putNoteSaga({ payload }: ReturnType<typeof putNoteTitle>): any {
   try {
     let data = payload;
     if (yield select(selectIsAuthenticated)) {
-      yield putResolve(authCheck);
+      yield call(authCheck);
       let res = yield call(Api.putNote, payload);
       data = res.data;
       yield put(statusSet("synced"));
     }
     yield put(notePut(data));
+    for (let tagId of data.tag_set) {
+      const tag = yield select((state) => selectTagById(state, tagId));
+      yield put(tagPut({ ...tag, notes: [...tag.notes, data.id] }));
+    }
   } catch (err) {
     yield put(statusSet("offline"));
     yield put(notePutError());
@@ -126,6 +131,7 @@ function* putNoteSaga({ payload }: ReturnType<typeof putNoteTitle>): any {
 function* watchPutNote() {
   yield throttle(3000, putNoteTitle.type, putNoteSaga);
   yield throttle(5000, putNoteContent.type, putNoteSaga);
+  yield takeEvery(putNoteTag.type, putNoteSaga);
 }
 
 export function* noteRootSaga() {
@@ -160,6 +166,7 @@ const noteSlice = createSlice({
     noteDeleteError(state) {},
     putNoteTitle(state, _) {},
     putNoteContent(state, _) {},
+    putNoteTag(state, _) {},
     notePut(state, { payload }) {
       noteAdapter.upsertOne(state, payload);
     },
@@ -185,6 +192,7 @@ export const {
   noteDeleteError,
   putNoteTitle,
   putNoteContent,
+  putNoteTag,
   notePut,
   notePutError,
   noteSliceReset,

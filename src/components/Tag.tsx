@@ -22,12 +22,6 @@ const Tag: React.FC<{ tagId: number }> = ({ tagId }) => {
   const label: string = tag?.label!;
   const [putVal, setPutVal] = useState<string>(label);
 
-  const handleUpdate = () => {
-    if (putVal && putVal !== label)
-      dispatch(putTag({ id: tagId, label: putVal, section: tag?.section }));
-    setOpen(false);
-  };
-
   const menu = (
     <Menu>
       <Menu.Item key={1} onClick={() => setOpen(true)}>
@@ -64,8 +58,12 @@ const Tag: React.FC<{ tagId: number }> = ({ tagId }) => {
         width={300}
         closable={false}
         okText="Update"
-        onOk={handleUpdate}
         onCancel={() => setOpen(false)}
+        onOk={() => {
+          if (putVal && putVal !== label)
+            dispatch(putTag({ id: tagId, label: putVal.toLowerCase() }));
+          setOpen(false);
+        }}
       >
         <Input
           maxLength={30}

@@ -5,9 +5,9 @@ import {
   put,
   takeLatest,
   select,
-  putResolve,
   takeLeading,
-  takeEvery,
+  // takeEvery,
+  // putResolve,
 } from "redux-saga/effects";
 
 import { RootState } from "./store";
@@ -62,7 +62,7 @@ function* watchSignIn() {
 
 function* signOutSaga(): any {
   try {
-    yield putResolve(authCheck);
+    yield call(authCheck);
     yield call(Api.logout);
     yield put(statusSet("synced"));
   } catch (err) {
@@ -91,38 +91,47 @@ function* watchAuthSetup() {
   yield takeLeading(authSetup.type, authSetupSaga);
 }
 
-function* authCheckSaga(): any {
+export function* authCheck(): any {
   let accessToken: string = yield select(selectAccessToken);
   http.defaults.headers["Authorization"] = `Token ${accessToken}`;
   let accessExpire: number = yield select(selectAccessExpire);
   let now = Date.now() / 60000;
   if (now > accessExpire) {
-    put(accessRefresh(now));
+    try {
+      let refreshToken: string = yield select(selectRefreshToken);
+      let res = yield call(Api.refresh, refreshToken);
+      let access = res.data.access;
+      http.defaults.headers["Authorization"] = `Token ${access}`;
+      yield put(accessTokenSet({ access, expire: now + ACCESS_LIFE }));
+      yield put(statusSet("synced"));
+    } catch (err) {
+      yield put(statusSet("offline"));
+    }
   }
 }
 
-function* watchAuthCheck() {
-  yield takeEvery(authCheck.type, authCheckSaga);
-}
+// function* watchAuthCheck() {
+//   yield takeEvery(authCheck.type, authCheckSaga);
+// }
 
-function* accessRefreshSaga({
-  payload,
-}: ReturnType<typeof accessRefresh>): any {
-  try {
-    let refreshToken: string = yield select(selectRefreshToken);
-    let res = yield call(Api.refresh, refreshToken);
-    let access = res.data.access;
-    http.defaults.headers["Authorization"] = `Token ${access}`;
-    yield put(accessTokenSet({ access, expire: payload + ACCESS_LIFE }));
-    yield put(statusSet("synced"));
-  } catch (err) {
-    yield put(statusSet("offline"));
-  }
-}
+// export function* accessRefreshSaga({
+//   payload,
+// }: ReturnType<typeof accessRefresh>): any {
+//   try {
+//     let refreshToken: string = yield select(selectRefreshToken);
+//     let res = yield call(Api.refresh, refreshToken);
+//     let access = res.data.access;
+//     http.defaults.headers["Authorization"] = `Token ${access}`;
+//     yield put(accessTokenSet({ access, expire: payload + ACCESS_LIFE }));
+//     yield put(statusSet("synced"));
+//   } catch (err) {
+//     yield put(statusSet("offline"));
+//   }
+// }
 
-function* watchAccessRefresh() {
-  yield takeLeading(accessRefresh.type, accessRefreshSaga);
-}
+// function* watchAccessRefresh() {
+//   yield takeLeading(accessRefresh.type, accessRefreshSaga);
+// }
 
 export function* slicesReset(): any {
   yield put(sectionSliceReset());
@@ -137,8 +146,8 @@ export function* homeRootSaga() {
     watchSignIn(),
     watchSignOut(),
     watchAuthSetup(),
-    watchAuthCheck(),
-    watchAccessRefresh(),
+    // watchAuthCheck(),
+    // watchAccessRefresh(),
   ]);
 }
 
@@ -216,8 +225,8 @@ const homeSlice = createSlice({
     authSetup(state) {
       state.status = "syncing";
     },
-    authCheck() {},
-    accessRefresh(state, _) {},
+    // authCheck() {},
+    // accessRefresh(state, _) {},
   },
 });
 
@@ -238,8 +247,8 @@ export const {
   accessTokenSet,
   statusSet,
   authSetup,
-  authCheck,
-  accessRefresh,
+  // authCheck,
+  // accessRefresh,
 } = homeSlice.actions;
 
 const selectHome = (state: RootState) => state.home;

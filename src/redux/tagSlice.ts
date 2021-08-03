@@ -10,12 +10,13 @@ import {
   select,
   takeEvery,
   takeLatest,
-  putResolve
+  // putResolve
 } from "redux-saga/effects";
 
 import { RootState } from "./store";
 import Api from "./api";
 import { authCheck, selectIsAuthenticated, statusSet } from "./homeSlice";
+import { notePut, selectNoteById } from "./noteSlice";
 
 export interface TagObj {
   id: number;
@@ -44,7 +45,7 @@ const initialState = tagAdapter.getInitialState({
 
 function* fetchTagsSaga({ payload }: ReturnType<typeof fetchTags>): any {
   try {
-    yield putResolve(authCheck);
+    yield call(authCheck);
     let res = yield call(Api.fetchTags, payload);
     yield put(statusSet("synced"));
     const allTags = yield select((state) =>
@@ -74,7 +75,7 @@ function* postTagSaga({ payload }: ReturnType<typeof postTag>): any {
       ) + 10000;
     let data: any = { rank, ...payload };
     if (yield select(selectIsAuthenticated)) {
-      yield putResolve(authCheck);
+      yield call(authCheck);
       let res = yield call(Api.postTag, data);
       data = res.data;
       yield put(statusSet("synced"));
@@ -82,6 +83,10 @@ function* postTagSaga({ payload }: ReturnType<typeof postTag>): any {
       data = { id: rank, ...data, notes: [] };
     }
     yield put(tagPosted(data));
+    for (let noteId of data.notes) {
+      const note = yield select((state) => selectNoteById(state, noteId));
+      yield put(notePut({ ...note, tag_set: [...note.tag_set, data.id] }));
+    }
   } catch (err) {
     yield put(statusSet("offline"));
     yield put(tagPostError());
@@ -96,7 +101,7 @@ function* deleteTagSaga({ payload }: ReturnType<typeof deleteTag>): any {
   try {
     let id: number = payload;
     if (yield select(selectIsAuthenticated)) {
-      yield putResolve(authCheck);
+      yield call(authCheck);
       yield call(Api.deleteTag, id);
       yield put(statusSet("synced"));
     }
@@ -115,7 +120,7 @@ function* putTagSaga({ payload }: ReturnType<typeof putTag>): any {
   try {
     let data = payload;
     if (yield select(selectIsAuthenticated)) {
-      yield putResolve(authCheck);
+      yield call(authCheck);
       let res = yield call(Api.putTag, payload);
       data = res.data;
       yield put(statusSet("synced"));

@@ -23,15 +23,19 @@ const TagArea: React.FC<{ sectionId: number }> = ({ sectionId }) => {
   const allTags = useAppSelector((state) =>
     selectTagsBySection(state, sectionId)
   );
-  const { isAndFilter, activeTagIds, activeNoteIds } =
-    useAppSelector((state) => selectTagMetaBySection(state, sectionId));
+  const { isAndFilter, activeTagIds, activeNoteIds } = useAppSelector((state) =>
+    selectTagMetaBySection(state, sectionId)
+  );
 
   useEffect(() => {
     if (isAuthenticated) dispatch(fetchTags(sectionId));
   }, [dispatch, sectionId, isAuthenticated]);
 
   const handleCreate = () => {
-    if (postVal) dispatch(postTag({ label: postVal, section: sectionId }));
+    if (postVal)
+      dispatch(
+        postTag({ label: postVal.toLowerCase(), section: sectionId, notes: [] })
+      );
     setOpen(false);
   };
 
@@ -48,7 +52,7 @@ const TagArea: React.FC<{ sectionId: number }> = ({ sectionId }) => {
               shape="circle"
               size="small"
               type="primary"
-              // ghost={!isAndFilter}
+              ghost={!isAndFilter}
               onClick={() => dispatch(isAndFilterToggled(sectionId))}
             >
               {isAndFilter ? "⋂" : "⋃"}

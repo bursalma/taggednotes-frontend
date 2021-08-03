@@ -1,7 +1,17 @@
 import { useState } from "react";
 import styled from "styled-components";
-import { Button, Card, Modal, Input, Typography, Popconfirm } from "antd";
-import { DeleteOutlined } from "@ant-design/icons";
+import {
+  Button,
+  Card,
+  Modal,
+  Input,
+  Typography,
+  Popconfirm,
+  Tag,
+  Dropdown,
+  Menu,
+} from "antd";
+import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 
 import { useAppDispatch, useAppSelector } from "../redux/store";
 import {
@@ -10,14 +20,75 @@ import {
   putNoteContent,
   selectJustCreatedNoteId,
   selectNoteById,
+  putNoteTag,
 } from "../redux/noteSlice";
 import NoteTag from "./NoteTag";
+import { postTag, selectTagsBySection, TagObj } from "../redux/tagSlice";
 
 const Note: React.FC<{ noteId: number }> = ({ noteId }) => {
   const dispatch = useAppDispatch();
   const justCreatedId = useAppSelector(selectJustCreatedNoteId);
   const [open, setOpen] = useState<boolean>(justCreatedId === noteId);
+  const [inputVisible, setInputVisible] = useState<boolean>(false);
+  const [menuVisible, setMenuVisible] = useState<boolean>(false);
+  const [newTag, setNewTag] = useState<string>("");
   const note = useAppSelector((state) => selectNoteById(state, noteId));
+  const sectionId: number = note?.section!;
+  const tag_set: number[] = note?.tag_set!;
+  const allTags: TagObj[] = useAppSelector((state) =>
+    selectTagsBySection(state, sectionId)
+  );
+  const relTags = allTags.filter(({ id }) => !tag_set.includes(id));
+  const [options, setOptions] = useState<TagObj[]>(relTags);
+
+  const handleClose = () => {
+    setMenuVisible(false);
+    setInputVisible(false);
+    setNewTag("");
+  };
+
+  const handleChange = (e: any) => {
+    let value = e.target.value;
+    setNewTag(value);
+    setOptions(
+      relTags.filter(({ label }) => label.includes(value.toLowerCase()))
+    );
+  };
+
+  const handleCreate = (tagToAdd = newTag.toLowerCase()) => {
+    let isNewTag = allTags
+      .filter(({ id }) => tag_set.includes(id))
+      .every(({ label }) => label !== tagToAdd);
+    if (tagToAdd && isNewTag) {
+      let existingTag = relTags.find(({ label }) => label === tagToAdd);
+      if (existingTag) {
+        dispatch(
+          putNoteTag({ id: noteId, tag_set: [...tag_set, existingTag.id] })
+        );
+      } else {
+        dispatch(
+          postTag({ label: tagToAdd, section: sectionId, notes: [noteId] })
+        );
+      }
+    }
+    handleClose();
+  };
+
+  const menu = (
+    <Menu>
+      {options.map(({ id, label }) => (
+        <Menu.Item
+          key={id}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            handleCreate(label);
+          }}
+        >
+          {label}
+        </Menu.Item>
+      ))}
+    </Menu>
+  );
 
   return (
     <div>
@@ -34,8 +105,31 @@ const Note: React.FC<{ noteId: number }> = ({ noteId }) => {
         onCancel={() => setOpen(false)}
       >
         <NoteTagView>
-          {note?.tag_set.map((tagId) => <NoteTag tagId={tagId} />
-
+          {tag_set.map((tagId) => (
+            <NoteTag key={tagId} tagId={tagId} />
+          ))}
+          {inputVisible ? (
+            <Dropdown visible={options.length ? menuVisible : false} overlay={menu}>
+              <Input
+                maxLength={30}
+                style={{ width: 80 }}
+                autoFocus
+                size="small"
+                placeholder="New Tag"
+                onChange={handleChange}
+                onBlur={handleClose}
+                onPressEnter={() => handleCreate()}
+              />
+            </Dropdown>
+          ) : (
+            <NewTagContainer
+              onClick={() => {
+                setInputVisible(true);
+                setMenuVisible(true);
+              }}
+            >
+              <PlusOutlined /> New Tag
+            </NewTagContainer>
           )}
         </NoteTagView>
         <Input.TextArea
@@ -45,13 +139,7 @@ const Note: React.FC<{ noteId: number }> = ({ noteId }) => {
           className="modal-title"
           placeholder="Title"
           onChange={(e) =>
-            dispatch(
-              putNoteTitle({
-                id: noteId,
-                section: note?.section,
-                title: e.target.value,
-              })
-            )
+            dispatch(putNoteTitle({ id: noteId, title: e.target.value }))
           }
         />
         <Input.TextArea
@@ -60,13 +148,7 @@ const Note: React.FC<{ noteId: number }> = ({ noteId }) => {
           defaultValue={note?.content}
           placeholder="Content"
           onChange={(e) =>
-            dispatch(
-              putNoteContent({
-                id: noteId,
-                section: note?.section,
-                content: e.target.value,
-              })
-            )
+            dispatch(putNoteContent({ id: noteId, content: e.target.value }))
           }
         />
         <FooterContainer>
@@ -101,6 +183,11 @@ const ModalContainer = styled(Modal)`
   .modal-title {
     font-size: 1.2em;
   }
+`;
+
+const NewTagContainer = styled(Tag)`
+  background-color: transparent;
+  border-style: dashed;
 `;
 
 const FooterContainer = styled.div`
