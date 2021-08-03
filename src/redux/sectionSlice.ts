@@ -6,6 +6,7 @@ import {
   select,
   takeEvery,
   takeLatest,
+  putResolve
 } from "redux-saga/effects";
 
 import { RootState } from "./store";
@@ -29,7 +30,7 @@ const initialState = sectionAdapter.getInitialState({} as {});
 
 function* fetchSectionsSaga(): any {
   try {
-    yield call(authCheck);
+    yield putResolve(authCheck);
     let res = yield call(Api.fetchSections);
     yield put(statusSet("synced"));
     yield put(sectionsFetched(res.data));
@@ -53,7 +54,7 @@ function* postSectionSaga({ payload }: ReturnType<typeof postSection>): any {
       ) + 10000;
     let data: any = { name: payload, rank };
     if (yield select(selectIsAuthenticated)) {
-      yield call(authCheck);
+      yield putResolve(authCheck);
       let res = yield call(Api.postSection, data);
       data = res.data;
       yield put(statusSet("synced"));
@@ -77,7 +78,7 @@ function* deleteSectionSaga({
   try {
     let id: number = payload;
     if (yield select(selectIsAuthenticated)) {
-      yield call(authCheck);
+      yield putResolve(authCheck);
       yield call(Api.deleteSection, id);
       yield put(statusSet("synced"));
     }
@@ -96,7 +97,7 @@ function* putSectionSaga({ payload }: ReturnType<typeof putSection>): any {
   try {
     let data = payload;
     if (yield select(selectIsAuthenticated)) {
-      yield call(authCheck);
+      yield putResolve(authCheck);
       let res = yield call(Api.putSection, data);
       data = res.data;
       yield put(statusSet("synced"));

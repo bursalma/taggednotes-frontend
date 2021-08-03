@@ -11,6 +11,7 @@ import {
   selectJustCreatedNoteId,
   selectNoteById,
 } from "../redux/noteSlice";
+import NoteTag from "./NoteTag";
 
 const Note: React.FC<{ noteId: number }> = ({ noteId }) => {
   const dispatch = useAppDispatch();
@@ -32,6 +33,11 @@ const Note: React.FC<{ noteId: number }> = ({ noteId }) => {
         footer={null}
         onCancel={() => setOpen(false)}
       >
+        <NoteTagView>
+          {note?.tag_set.map((tagId) => <NoteTag tagId={tagId} />
+
+          )}
+        </NoteTagView>
         <Input.TextArea
           autoSize
           bordered={false}
@@ -101,5 +107,7 @@ const FooterContainer = styled.div`
   display: flex;
   justify-content: flex-end;
 `;
+
+const NoteTagView = styled.div``;
 
 export default Note;

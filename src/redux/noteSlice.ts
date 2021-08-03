@@ -11,6 +11,7 @@ import {
   takeEvery,
   takeLatest,
   throttle,
+  putResolve
 } from "redux-saga/effects";
 
 import { RootState } from "./store";
@@ -39,7 +40,7 @@ const initialState = noteAdapter.getInitialState({
 
 function* fetchNotesSaga({ payload }: ReturnType<typeof fetchNotes>): any {
   try {
-    yield call(authCheck);
+    yield putResolve(authCheck);
     let res = yield call(Api.fetchNotes, payload);
     yield put(statusSet("synced"));
     const allNotes = yield select((state) =>
@@ -69,7 +70,7 @@ function* postNoteSaga({ payload }: ReturnType<typeof postNote>): any {
       ) + 10000;
     let data: any = { section: payload, rank };
     if (yield select(selectIsAuthenticated)) {
-      yield call(authCheck);
+      yield putResolve(authCheck);
       let res = yield call(Api.postNote, data);
       data = res.data;
       yield put(statusSet("synced"));
@@ -91,7 +92,7 @@ function* deleteNoteSaga({ payload }: ReturnType<typeof deleteNote>): any {
   try {
     let id: number = payload;
     if (yield select(selectIsAuthenticated)) {
-      yield call(authCheck);
+      yield putResolve(authCheck);
       yield call(Api.deleteNote, id);
       yield put(statusSet("synced"));
     }
@@ -110,7 +111,7 @@ function* putNoteSaga({ payload }: ReturnType<typeof putNoteTitle>): any {
   try {
     let data = payload;
     if (yield select(selectIsAuthenticated)) {
-      yield call(authCheck);
+      yield putResolve(authCheck);
       let res = yield call(Api.putNote, payload);
       data = res.data;
       yield put(statusSet("synced"));

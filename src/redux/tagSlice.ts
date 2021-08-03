@@ -10,6 +10,7 @@ import {
   select,
   takeEvery,
   takeLatest,
+  putResolve
 } from "redux-saga/effects";
 
 import { RootState } from "./store";
@@ -43,7 +44,7 @@ const initialState = tagAdapter.getInitialState({
 
 function* fetchTagsSaga({ payload }: ReturnType<typeof fetchTags>): any {
   try {
-    yield call(authCheck);
+    yield putResolve(authCheck);
     let res = yield call(Api.fetchTags, payload);
     yield put(statusSet("synced"));
     const allTags = yield select((state) =>
@@ -73,7 +74,7 @@ function* postTagSaga({ payload }: ReturnType<typeof postTag>): any {
       ) + 10000;
     let data: any = { rank, ...payload };
     if (yield select(selectIsAuthenticated)) {
-      yield call(authCheck);
+      yield putResolve(authCheck);
       let res = yield call(Api.postTag, data);
       data = res.data;
       yield put(statusSet("synced"));
@@ -95,7 +96,7 @@ function* deleteTagSaga({ payload }: ReturnType<typeof deleteTag>): any {
   try {
     let id: number = payload;
     if (yield select(selectIsAuthenticated)) {
-      yield call(authCheck);
+      yield putResolve(authCheck);
       yield call(Api.deleteTag, id);
       yield put(statusSet("synced"));
     }
@@ -114,7 +115,7 @@ function* putTagSaga({ payload }: ReturnType<typeof putTag>): any {
   try {
     let data = payload;
     if (yield select(selectIsAuthenticated)) {
-      yield call(authCheck);
+      yield putResolve(authCheck);
       let res = yield call(Api.putTag, payload);
       data = res.data;
       yield put(statusSet("synced"));
