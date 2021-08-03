@@ -1,20 +1,33 @@
 import { Tag } from "antd";
 
-import { useAppSelector} from "../redux/store";
-import {
-  selectTagById,
-  // tagToggled,
-  // selectTagMetaBySection,
-  // deleteTag,
-  // putTag,
-} from "../redux/tagSlice";
+import { useAppDispatch } from "../redux/store";
+import { TagObj } from "../redux/tagSlice";
+import { putNoteTagRemove } from "../redux/noteSlice";
 
-const NoteTag: React.FC<{ tagId: number }> = ({ tagId }) => {
-  // const dispatch = useAppDispatch();
-  const tag = useAppSelector((state) => selectTagById(state, tagId));
-  const label: string = tag?.label!;
+const NoteTag: React.FC<{ tag: TagObj; noteId: number; tag_set: number[] }> = ({
+  tag,
+  noteId,
+  tag_set,
+}) => {
+  const dispatch = useAppDispatch();
 
-  return <Tag>{label}</Tag>;
+  const handleRemove = () => {
+    dispatch(
+      putNoteTagRemove({
+        note: {
+          id: noteId,
+          tag_set: tag_set.filter((id: number) => id !== tag.id),
+        },
+        tag: tag,
+      })
+    );
+  };
+
+  return (
+    <Tag closable onClose={handleRemove}>
+      {tag.label}
+    </Tag>
+  );
 };
 
 export default NoteTag;

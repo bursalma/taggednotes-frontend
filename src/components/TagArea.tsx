@@ -37,6 +37,7 @@ const TagArea: React.FC<{ sectionId: number }> = ({ sectionId }) => {
         postTag({ label: postVal.toLowerCase(), section: sectionId, notes: [] })
       );
     setOpen(false);
+    setPostVal("");
   };
 
   return (
@@ -99,9 +100,13 @@ const TagArea: React.FC<{ sectionId: number }> = ({ sectionId }) => {
         closable={false}
         okText="Create"
         onOk={handleCreate}
-        onCancel={() => setOpen(false)}
+        onCancel={() => {
+          setOpen(false);
+          setPostVal("");
+        }}
       >
         <Input
+          value={postVal}
           maxLength={30}
           onPressEnter={handleCreate}
           allowClear

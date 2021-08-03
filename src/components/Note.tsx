@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import styled from "styled-components";
 import {
   Button,
@@ -20,26 +20,38 @@ import {
   putNoteContent,
   selectJustCreatedNoteId,
   selectNoteById,
-  putNoteTag,
+  putNoteTagAdd,
+  NoteObj,
+  justCreatedReset,
 } from "../redux/noteSlice";
+import {
+  postTag,
+  selectSeparateTagsByOwnership,
+  TagObj,
+} from "../redux/tagSlice";
 import NoteTag from "./NoteTag";
-import { postTag, selectTagsBySection, TagObj } from "../redux/tagSlice";
 
 const Note: React.FC<{ noteId: number }> = ({ noteId }) => {
   const dispatch = useAppDispatch();
   const justCreatedId = useAppSelector(selectJustCreatedNoteId);
-  const [open, setOpen] = useState<boolean>(justCreatedId === noteId);
+  const [open, setOpen] = useState<boolean>(false);
   const [inputVisible, setInputVisible] = useState<boolean>(false);
   const [menuVisible, setMenuVisible] = useState<boolean>(false);
   const [newTag, setNewTag] = useState<string>("");
-  const note = useAppSelector((state) => selectNoteById(state, noteId));
-  const sectionId: number = note?.section!;
-  const tag_set: number[] = note?.tag_set!;
-  const allTags: TagObj[] = useAppSelector((state) =>
-    selectTagsBySection(state, sectionId)
+  const note: NoteObj = useAppSelector((state) =>
+    selectNoteById(state, noteId)
+  )!;
+  const [ownedTags, unownedTags]: TagObj[][] = useAppSelector((state) =>
+    selectSeparateTagsByOwnership(state, note.section, note.tag_set)
   );
-  const relTags = allTags.filter(({ id }) => !tag_set.includes(id));
-  const [options, setOptions] = useState<TagObj[]>(relTags);
+  const [options, setOptions] = useState<TagObj[]>(unownedTags);
+
+  useEffect(() => {
+    if (justCreatedId === noteId) {
+      setOpen(true);
+      dispatch(justCreatedReset());
+    }
+  }, [dispatch, justCreatedId, noteId]);
 
   const handleClose = () => {
     setMenuVisible(false);
@@ -51,23 +63,24 @@ const Note: React.FC<{ noteId: number }> = ({ noteId }) => {
     let value = e.target.value;
     setNewTag(value);
     setOptions(
-      relTags.filter(({ label }) => label.includes(value.toLowerCase()))
+      unownedTags.filter(({ label }) => label.includes(value.toLowerCase()))
     );
   };
 
   const handleCreate = (tagToAdd = newTag.toLowerCase()) => {
-    let isNewTag = allTags
-      .filter(({ id }) => tag_set.includes(id))
-      .every(({ label }) => label !== tagToAdd);
+    let isNewTag = ownedTags.every(({ label }) => label !== tagToAdd);
     if (tagToAdd && isNewTag) {
-      let existingTag = relTags.find(({ label }) => label === tagToAdd);
+      let existingTag = unownedTags.find(({ label }) => label === tagToAdd);
       if (existingTag) {
         dispatch(
-          putNoteTag({ id: noteId, tag_set: [...tag_set, existingTag.id] })
+          putNoteTagAdd({
+            note: { id: noteId, tag_set: [...note.tag_set, existingTag.id] },
+            tag: existingTag,
+          })
         );
       } else {
         dispatch(
-          postTag({ label: tagToAdd, section: sectionId, notes: [noteId] })
+          postTag({ label: tagToAdd, section: note.section, notes: [noteId] })
         );
       }
     }
@@ -93,10 +106,8 @@ const Note: React.FC<{ noteId: number }> = ({ noteId }) => {
   return (
     <div>
       <NoteContainer size="small" onClick={() => setOpen(true)} hoverable>
-        <Typography.Title level={5}>
-          {note?.title} {/* {note?.rank} */}
-        </Typography.Title>
-        <p>{note?.content}</p>
+        <Typography.Title level={5}>{note.title}</Typography.Title>
+        <p>{note.content}</p>
       </NoteContainer>
       <ModalContainer
         visible={open}
@@ -105,11 +116,19 @@ const Note: React.FC<{ noteId: number }> = ({ noteId }) => {
         onCancel={() => setOpen(false)}
       >
         <NoteTagView>
-          {tag_set.map((tagId) => (
-            <NoteTag key={tagId} tagId={tagId} />
+          {ownedTags.map((tag) => (
+            <NoteTag
+              key={tag.id}
+              tag={tag}
+              noteId={noteId}
+              tag_set={note.tag_set}
+            />
           ))}
           {inputVisible ? (
-            <Dropdown visible={options.length ? menuVisible : false} overlay={menu}>
+            <Dropdown
+              visible={options.length ? menuVisible : false}
+              overlay={menu}
+            >
               <Input
                 maxLength={30}
                 style={{ width: 80 }}
@@ -124,6 +143,7 @@ const Note: React.FC<{ noteId: number }> = ({ noteId }) => {
           ) : (
             <NewTagContainer
               onClick={() => {
+                setOptions(unownedTags);
                 setInputVisible(true);
                 setMenuVisible(true);
               }}
@@ -139,7 +159,9 @@ const Note: React.FC<{ noteId: number }> = ({ noteId }) => {
           className="modal-title"
           placeholder="Title"
           onChange={(e) =>
-            dispatch(putNoteTitle({ id: noteId, title: e.target.value }))
+            dispatch(
+              putNoteTitle({ note: { id: noteId, title: e.target.value } })
+            )
           }
         />
         <Input.TextArea
@@ -148,7 +170,9 @@ const Note: React.FC<{ noteId: number }> = ({ noteId }) => {
           defaultValue={note?.content}
           placeholder="Content"
           onChange={(e) =>
-            dispatch(putNoteContent({ id: noteId, content: e.target.value }))
+            dispatch(
+              putNoteContent({ note: { id: noteId, content: e.target.value } })
+            )
           }
         />
         <FooterContainer>
@@ -156,7 +180,9 @@ const Note: React.FC<{ noteId: number }> = ({ noteId }) => {
             title="Are you sure you want to delete?"
             okText="Delete"
             placement="bottom"
-            onConfirm={() => dispatch(deleteNote(noteId))}
+            onConfirm={() =>
+              dispatch(deleteNote({ noteId, tag_set: note.tag_set }))
+            }
           >
             <Button icon={<DeleteOutlined />} type="text"></Button>
           </Popconfirm>

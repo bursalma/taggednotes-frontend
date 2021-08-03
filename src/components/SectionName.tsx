@@ -27,9 +27,13 @@ const SectionName: React.FC<{ sectionId: number; sectionName: string }> = ({
         closable={false}
         okText="Update"
         onOk={handleUpdate}
-        onCancel={() => setOpen(false)}
+        onCancel={() => {
+          setOpen(false);
+          setPutVal(sectionName);
+        }}
       >
         <Input
+          value={putVal}
           maxLength={30}
           defaultValue={sectionName}
           onChange={(e) => setPutVal(e.target.value)}

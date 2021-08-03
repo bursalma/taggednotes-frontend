@@ -29,6 +29,7 @@ const SectionArea: React.FC = () => {
   const handleCreate = () => {
     if (postVal) dispatch(postSection(postVal));
     setOpen(false);
+    setPostVal("");
   };
 
   return (
@@ -69,9 +70,13 @@ const SectionArea: React.FC = () => {
         closable={false}
         okText="Create"
         onOk={handleCreate}
-        onCancel={() => setOpen(false)}
+        onCancel={() => {
+          setOpen(false);
+          setPostVal("");
+        }}
       >
         <Input
+          value={postVal}
           maxLength={30}
           onPressEnter={handleCreate}
           allowClear

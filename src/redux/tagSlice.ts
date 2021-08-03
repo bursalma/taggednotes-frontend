@@ -10,8 +10,8 @@ import {
   select,
   takeEvery,
   takeLatest,
-  // putResolve
 } from "redux-saga/effects";
+import { message } from "antd";
 
 import { RootState } from "./store";
 import Api from "./api";
@@ -99,13 +99,22 @@ function* watchPostTag() {
 
 function* deleteTagSaga({ payload }: ReturnType<typeof deleteTag>): any {
   try {
-    let id: number = payload;
+    let { tagId, notes } = payload;
     if (yield select(selectIsAuthenticated)) {
       yield call(authCheck);
-      yield call(Api.deleteTag, id);
+      yield call(Api.deleteTag, tagId);
       yield put(statusSet("synced"));
     }
-    yield put(tagDeleted(id));
+    yield put(tagDeleted(tagId));
+    for (let noteId of notes) {
+      const note = yield select((state) => selectNoteById(state, noteId));
+      yield put(
+        notePut({
+          id: noteId,
+          tag_set: note.tag_set.filter((id: number) => id !== tagId),
+        })
+      );
+    }
   } catch (err) {
     yield put(statusSet("offline"));
     yield put(tagDeleteError());
@@ -191,22 +200,30 @@ const tagSlice = createSlice({
       tagAdapter.removeMany(state, payload.remove);
       tagAdapter.upsertMany(state, payload.add);
     },
-    tagsFetchError(state) {},
+    tagsFetchError(state) {
+      message.error("An error has occurred");
+    },
     postTag(state, _) {},
     tagPosted(state, { payload }) {
       tagAdapter.addOne(state, payload);
     },
-    tagPostError(state) {},
+    tagPostError(state) {
+      message.error("An error has occurred");
+    },
     deleteTag(state, _) {},
     tagDeleted(state, { payload }) {
       tagAdapter.removeOne(state, payload);
     },
-    tagDeleteError(state) {},
+    tagDeleteError(state) {
+      message.error("An error has occurred");
+    },
     putTag(state, _) {},
     tagPut(state, { payload }) {
       tagAdapter.upsertOne(state, payload);
     },
-    tagPutError(state) {},
+    tagPutError(state) {
+      message.error("An error has occurred");
+    },
     tagSliceReset(state) {
       state.ids = initialState.ids;
       state.entities = initialState.entities;
@@ -247,11 +264,26 @@ export const selectTag = (state: RootState) => state.tag;
 const selectTagMeta = (state: RootState) => state.tag.meta;
 
 export const selectTagMetaBySection = createSelector(
-  [selectTagMeta, (state: RootState, sectionId: number) => sectionId],
+  [selectTagMeta, (_: RootState, sectionId: number) => sectionId],
   (meta, sectionId) => meta[sectionId]
 );
 
 export const selectTagsBySection = createSelector(
-  [selectAllTags, (state: RootState, sectionId: number) => sectionId],
+  [selectAllTags, (_: RootState, sectionId: number) => sectionId],
   (tags, sectionId) => tags.filter((tag) => tag.section === sectionId)
+);
+
+export const selectSeparateTagsByOwnership = createSelector(
+  (state: RootState, sectionId: number, tag_set: number[]) => ({
+    tags: selectTagsBySection(state, sectionId),
+    tag_set,
+  }),
+  ({ tags, tag_set }) =>
+    tags.reduce(
+      (res, tag) => {
+        tag_set.includes(tag.id) ? res[0].push(tag) : res[1].push(tag);
+        return res;
+      },
+      [[], []] as TagObj[][]
+    )
 );

@@ -14,7 +14,6 @@ import noteReducer, { noteRootSaga } from "./noteSlice";
 const persistConfig = {
   key: "root",
   storage,
-  // whitelist: [],
 };
 
 const appReducer = combineReducers({

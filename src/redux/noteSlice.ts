@@ -11,8 +11,8 @@ import {
   takeEvery,
   takeLatest,
   throttle,
-  // putResolve
 } from "redux-saga/effects";
+import { message } from "antd";
 
 import { RootState } from "./store";
 import Api from "./api";
@@ -91,13 +91,22 @@ function* watchPostNote() {
 
 function* deleteNoteSaga({ payload }: ReturnType<typeof deleteNote>): any {
   try {
-    let id: number = payload;
+    let { noteId, tag_set } = payload;
     if (yield select(selectIsAuthenticated)) {
       yield call(authCheck);
-      yield call(Api.deleteNote, id);
+      yield call(Api.deleteNote, noteId);
       yield put(statusSet("synced"));
     }
-    yield put(noteDeleted(id));
+    yield put(noteDeleted(noteId));
+    for (let tagId of tag_set) {
+      const tag = yield select((state) => selectTagById(state, tagId));
+      yield put(
+        tagPut({
+          id: tagId,
+          notes: tag.notes.filter((id: number) => id !== noteId),
+        })
+      );
+    }
   } catch (err) {
     yield put(statusSet("offline"));
     yield put(noteDeleteError());
@@ -108,20 +117,26 @@ function* watchDeleteNote() {
   yield takeEvery(deleteNote.type, deleteNoteSaga);
 }
 
-function* putNoteSaga({ payload }: ReturnType<typeof putNoteTitle>): any {
+function* putNoteSaga({ payload, type }: ReturnType<typeof putNoteTitle>): any {
   try {
-    let data = payload;
+    let { note, tag } = payload;
+    let data = note;
     if (yield select(selectIsAuthenticated)) {
       yield call(authCheck);
-      let res = yield call(Api.putNote, payload);
+      let res = yield call(Api.putNote, data);
       data = res.data;
       yield put(statusSet("synced"));
     }
     yield put(notePut(data));
-    for (let tagId of data.tag_set) {
-      const tag = yield select((state) => selectTagById(state, tagId));
-      yield put(tagPut({ ...tag, notes: [...tag.notes, data.id] }));
-    }
+    if (type === putNoteTagAdd.type)
+      yield put(tagPut({ id: tag.id, notes: [...tag.notes, data.id] }));
+    if (type === putNoteTagRemove.type)
+      yield put(
+        tagPut({
+          id: tag.id,
+          notes: tag.notes.filter((id: number) => id !== data.id),
+        })
+      );
   } catch (err) {
     yield put(statusSet("offline"));
     yield put(notePutError());
@@ -131,7 +146,8 @@ function* putNoteSaga({ payload }: ReturnType<typeof putNoteTitle>): any {
 function* watchPutNote() {
   yield throttle(3000, putNoteTitle.type, putNoteSaga);
   yield throttle(5000, putNoteContent.type, putNoteSaga);
-  yield takeEvery(putNoteTag.type, putNoteSaga);
+  yield takeEvery(putNoteTagAdd.type, putNoteSaga);
+  yield takeEvery(putNoteTagRemove.type, putNoteSaga);
 }
 
 export function* noteRootSaga() {
@@ -152,28 +168,40 @@ const noteSlice = createSlice({
       noteAdapter.removeMany(state, payload.remove);
       noteAdapter.upsertMany(state, payload.add);
     },
-    notesFetchError(state) {},
+    notesFetchError(state) {
+      message.error("An error has occurred");
+    },
     postNote(state, _) {},
     notePosted(state, { payload }) {
       state.justCreated = payload.id;
       noteAdapter.addOne(state, payload);
     },
-    notePostError(state) {},
+    notePostError(state) {
+      message.error("An error has occurred");
+    },
     deleteNote(state, _) {},
     noteDeleted(state, { payload }) {
       noteAdapter.removeOne(state, payload);
     },
-    noteDeleteError(state) {},
+    noteDeleteError(state) {
+      message.error("An error has occurred");
+    },
     putNoteTitle(state, _) {},
     putNoteContent(state, _) {},
-    putNoteTag(state, _) {},
+    putNoteTagAdd(state, _) {},
+    putNoteTagRemove(state, _) {},
     notePut(state, { payload }) {
       noteAdapter.upsertOne(state, payload);
     },
-    notePutError(state) {},
+    notePutError(state) {
+      message.error("An error has occurred");
+    },
     noteSliceReset(state) {
       state.ids = initialState.ids;
       state.entities = initialState.entities;
+    },
+    justCreatedReset(state) {
+      state.justCreated = undefined;
     },
   },
 });
@@ -192,10 +220,12 @@ export const {
   noteDeleteError,
   putNoteTitle,
   putNoteContent,
-  putNoteTag,
+  putNoteTagAdd,
+  putNoteTagRemove,
   notePut,
   notePutError,
   noteSliceReset,
+  justCreatedReset,
 } = noteSlice.actions;
 
 export const {

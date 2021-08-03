@@ -32,7 +32,6 @@ const UserInfo: React.FC = () => {
 
       <Modal
         visible={open}
-        // width={1000}
         closable={false}
         footer={null}
         onCancel={() => setOpen(false)}

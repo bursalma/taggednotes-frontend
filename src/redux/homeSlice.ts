@@ -6,9 +6,8 @@ import {
   takeLatest,
   select,
   takeLeading,
-  // takeEvery,
-  // putResolve,
 } from "redux-saga/effects";
+import { message } from "antd";
 
 import { RootState } from "./store";
 import Api, { http } from "./api";
@@ -110,29 +109,6 @@ export function* authCheck(): any {
   }
 }
 
-// function* watchAuthCheck() {
-//   yield takeEvery(authCheck.type, authCheckSaga);
-// }
-
-// export function* accessRefreshSaga({
-//   payload,
-// }: ReturnType<typeof accessRefresh>): any {
-//   try {
-//     let refreshToken: string = yield select(selectRefreshToken);
-//     let res = yield call(Api.refresh, refreshToken);
-//     let access = res.data.access;
-//     http.defaults.headers["Authorization"] = `Token ${access}`;
-//     yield put(accessTokenSet({ access, expire: payload + ACCESS_LIFE }));
-//     yield put(statusSet("synced"));
-//   } catch (err) {
-//     yield put(statusSet("offline"));
-//   }
-// }
-
-// function* watchAccessRefresh() {
-//   yield takeLeading(accessRefresh.type, accessRefreshSaga);
-// }
-
 export function* slicesReset(): any {
   yield put(sectionSliceReset());
   yield put(tagSliceReset());
@@ -146,8 +122,6 @@ export function* homeRootSaga() {
     watchSignIn(),
     watchSignOut(),
     watchAuthSetup(),
-    // watchAuthCheck(),
-    // watchAccessRefresh(),
   ]);
 }
 
@@ -187,6 +161,7 @@ const homeSlice = createSlice({
     },
     signUpError(state) {
       state.status = "offline";
+      message.error("An error has occurred");
     },
     signIn(state, _) {
       state.status = "syncing";
@@ -205,6 +180,7 @@ const homeSlice = createSlice({
     },
     signInError(state) {
       state.status = "offline";
+      message.error("An error has occurred");
     },
     signOut(state) {
       state.status = "syncing";
@@ -225,8 +201,6 @@ const homeSlice = createSlice({
     authSetup(state) {
       state.status = "syncing";
     },
-    // authCheck() {},
-    // accessRefresh(state, _) {},
   },
 });
 
@@ -247,8 +221,6 @@ export const {
   accessTokenSet,
   statusSet,
   authSetup,
-  // authCheck,
-  // accessRefresh,
 } = homeSlice.actions;
 
 const selectHome = (state: RootState) => state.home;

@@ -31,7 +31,7 @@ const Tag: React.FC<{ tagId: number }> = ({ tagId }) => {
         title="Are you sure you want to delete?"
         okText="Delete"
         placement="bottom"
-        onConfirm={() => dispatch(deleteTag(tagId))}
+        onConfirm={() => dispatch(deleteTag({ tagId, notes: tag?.notes }))}
       >
         <Menu.Item key={2}>Delete</Menu.Item>
       </Popconfirm>
@@ -47,7 +47,7 @@ const Tag: React.FC<{ tagId: number }> = ({ tagId }) => {
           type="primary"
           ghost={active}
           onClick={() =>
-            dispatch(tagToggled({ sectionId: tag?.section, tagId: tagId }))
+            dispatch(tagToggled({ sectionId: tag?.section, tagId }))
           }
         >
           {label}
@@ -58,7 +58,10 @@ const Tag: React.FC<{ tagId: number }> = ({ tagId }) => {
         width={300}
         closable={false}
         okText="Update"
-        onCancel={() => setOpen(false)}
+        onCancel={() => {
+          setOpen(false);
+          setPutVal(label);
+        }}
         onOk={() => {
           if (putVal && putVal !== label)
             dispatch(putTag({ id: tagId, label: putVal.toLowerCase() }));
@@ -66,6 +69,7 @@ const Tag: React.FC<{ tagId: number }> = ({ tagId }) => {
         }}
       >
         <Input
+          value={putVal}
           maxLength={30}
           defaultValue={label}
           onChange={(e) => setPutVal(e.target.value)}

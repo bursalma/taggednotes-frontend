@@ -6,8 +6,8 @@ import {
   select,
   takeEvery,
   takeLatest,
-  // putResolve
 } from "redux-saga/effects";
+import { message } from "antd";
 
 import { RootState } from "./store";
 import Api from "./api";
@@ -130,22 +130,30 @@ const sectionSlice = createSlice({
     sectionsFetched(state, { payload }) {
       sectionAdapter.setAll(state, payload);
     },
-    sectionsFetchError(state) {},
+    sectionsFetchError(state) {
+      message.error("An error has occurred");
+    },
     postSection(state, _) {},
     sectionPosted(state, { payload }) {
       sectionAdapter.addOne(state, payload);
     },
-    sectionPostError(state) {},
+    sectionPostError(state) {
+      message.error("An error has occurred");
+    },
     deleteSection(state, _) {},
     sectionDeleted(state, { payload }) {
       sectionAdapter.removeOne(state, payload);
     },
-    sectionDeleteError(state) {},
+    sectionDeleteError(state) {
+      message.error("An error has occurred");
+    },
     putSection(state, _) {},
     sectionPut(state, { payload }) {
       sectionAdapter.upsertOne(state, payload);
     },
-    sectionPutError(state) {},
+    sectionPutError(state) {
+      message.error("An error has occurred");
+    },
     sectionSliceReset(state) {
       state.ids = initialState.ids;
       state.entities = initialState.entities;
