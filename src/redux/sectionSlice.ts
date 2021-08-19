@@ -12,6 +12,8 @@ import { message } from "antd";
 import { RootState } from "./store";
 import Api from "./api";
 import { authCheck, selectIsAuthenticated, statusSet } from "./homeSlice";
+import { sectionTagsDeleted } from "./tagSlice";
+import { sectionNotesDeleted } from "./noteSlice";
 
 export interface SectionObj {
   id: number;
@@ -59,7 +61,7 @@ function* postSectionSaga({ payload }: ReturnType<typeof postSection>): any {
       data = res.data;
       yield put(statusSet("synced"));
     } else {
-      data = { id: rank, ...data, tag_rank: 1, note_rank: 1 };
+      data = { id: Date.now(), ...data, tag_rank: 1, note_rank: 1 };
     }
     yield put(sectionPosted(data));
   } catch (err) {
@@ -83,6 +85,8 @@ function* deleteSectionSaga({
       yield put(statusSet("synced"));
     }
     yield put(sectionDeleted(id));
+    yield put(sectionTagsDeleted(id));
+    yield put(sectionNotesDeleted(id));
   } catch (err) {
     yield put(statusSet("offline"));
     yield put(sectionDeleteError());

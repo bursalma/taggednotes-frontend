@@ -76,7 +76,7 @@ function* postNoteSaga({ payload }: ReturnType<typeof postNote>): any {
       data = res.data;
       yield put(statusSet("synced"));
     } else {
-      data = { id: rank, ...data, title: "", content: "" };
+      data = { id: Date.now(), ...data, title: "", content: "" };
     }
     yield put(notePosted(data));
   } catch (err) {
@@ -203,6 +203,14 @@ const noteSlice = createSlice({
     justCreatedReset(state) {
       state.justCreated = undefined;
     },
+    sectionNotesDeleted(state, { payload }) {
+      noteAdapter.removeMany(
+        state,
+        Object.values(state.entities)
+          .filter((note) => note?.section === payload)
+          .map((note) => note?.id!)
+      );
+    },
   },
 });
 
@@ -226,6 +234,7 @@ export const {
   notePutError,
   noteSliceReset,
   justCreatedReset,
+  sectionNotesDeleted,
 } = noteSlice.actions;
 
 export const {

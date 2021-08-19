@@ -80,7 +80,7 @@ function* postTagSaga({ payload }: ReturnType<typeof postTag>): any {
       data = res.data;
       yield put(statusSet("synced"));
     } else {
-      data = { id: rank, ...data };
+      data = { id: Date.now(), ...data };
     }
     yield put(tagPosted(data));
     for (let noteId of data.notes) {
@@ -159,9 +159,8 @@ const tagSlice = createSlice({
   initialState,
   reducers: {
     sectionMounted({ meta }, { payload }) {
-      let sectionId = payload;
-      if (!meta[sectionId]) {
-        meta[sectionId] = {
+      if (!meta[payload]) {
+        meta[payload] = {
           isAndFilter: true,
           activeTagIds: [],
           activeNoteIds: [],
@@ -229,6 +228,15 @@ const tagSlice = createSlice({
       state.entities = initialState.entities;
       state.meta = initialState.meta;
     },
+    sectionTagsDeleted(state, { payload }) {
+      tagAdapter.removeMany(
+        state,
+        Object.values(state.entities)
+          .filter((tag) => tag?.section === payload)
+          .map((tag) => tag?.id!)
+      );
+      delete state.meta[payload];
+    },
   },
 });
 
@@ -252,6 +260,7 @@ export const {
   tagPut,
   tagPutError,
   tagSliceReset,
+  sectionTagsDeleted,
 } = tagSlice.actions;
 
 export const {
